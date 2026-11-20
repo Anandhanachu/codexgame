@@ -3448,6 +3448,7 @@
       const keys = Object.create(null);
       let shiftHeld = false;
       let mouseFiring = false;
+      let firingPointerId = null;
       let footstepTimer = 0;
       window.addEventListener('keydown', (e) => {
         ensureAudio();
@@ -3471,7 +3472,7 @@
         }
       });
       window.addEventListener('keyup', (e) => { keys[e.code] = false; if (e.key === 'Shift' || !e.shiftKey) shiftHeld = false; });
-      window.addEventListener('blur', () => { mouseFiring = false; shiftHeld = false; for (const k in keys) keys[k] = false; });
+      window.addEventListener('blur', () => { mouseFiring = false; firingPointerId = null; shiftHeld = false; for (const k in keys) keys[k] = false; });
 
       const raycaster = new THREE.Raycaster();
       const mouseNdc = new THREE.Vector2();
@@ -3568,6 +3569,7 @@
       canvas.addEventListener('pointerdown', (e) => {
         if (e.button === 0) {
           mouseFiring = true;
+          firingPointerId = e.pointerId;
           triggerFire(e.clientX, e.clientY);
         } else if (e.button === 2) {
           isRightRotating = true;
@@ -3597,14 +3599,18 @@
       });
 
       canvas.addEventListener('pointerup', (e) => {
-        if (e.button === 0) mouseFiring = false;
+        if (e.button === 0 && e.pointerId === firingPointerId) { mouseFiring = false; firingPointerId = null; }
         if (e.button === 2) {
           isRightRotating = false;
           try { canvas.releasePointerCapture(e.pointerId); } catch (_) {}
         }
       });
-      window.addEventListener('pointerup', (e) => { if (e.button === 0) mouseFiring = false; });
-      window.addEventListener('pointercancel', () => { mouseFiring = false; });
+      window.addEventListener('pointerup', (e) => {
+        if (e.pointerId === firingPointerId) { mouseFiring = false; firingPointerId = null; }
+      });
+      window.addEventListener('pointercancel', (e) => {
+        if (e.pointerId === firingPointerId) { mouseFiring = false; firingPointerId = null; }
+      });
       canvas.addEventListener('contextmenu', (e) => e.preventDefault());
       canvas.addEventListener('wheel', (e) => {
         e.preventDefault();
@@ -3668,7 +3674,7 @@
           const moving = fwdInput !== 0 || sideInput !== 0;
           crosshairEl.classList.toggle('aiming', player.aiming);
           crosshairEl.classList.toggle('moving', moving && !player.aiming);
-          if (mouseFiring && !player.dead) triggerFire();
+          if ((mouseFiring || keys.KeyF) && !player.dead) triggerFire();
 
           moveForward.set(-Math.sin(orbitState.theta), 0, -Math.cos(orbitState.theta));
           moveRight.set(Math.cos(orbitState.theta), 0, -Math.sin(orbitState.theta));
@@ -4220,10 +4226,31 @@
       const padMap = { forward: 'KeyW', backward: 'KeyS', left: 'KeyA', right: 'KeyD', sprint: 'ShiftLeft' };
       document.querySelectorAll('.pad-btn[data-move]').forEach((b) => {
         const code = padMap[b.dataset.move]; if (!code) return;
-        b.addEventListener('pointerdown', (e) => { e.preventDefault(); keys[code] = true; });
-        b.addEventListener('pointerup', () => { keys[code] = false; });
-        b.addEventListener('pointerleave', () => { keys[code] = false; });
+        b.addEventListener('pointerdown', (e) => {
+          e.preventDefault(); keys[code] = true;
+          try { b.setPointerCapture(e.pointerId); } catch (_) {}
+        });
+        const stopMove = () => { keys[code] = false; };
+        b.addEventListener('pointerup', stopMove);
+        b.addEventListener('pointercancel', stopMove);
+        b.addEventListener('lostpointercapture', stopMove);
       });
+
+      const touchFireButton = document.getElementById('btn-touch-fire');
+      touchFireButton.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        mouseFiring = true;
+        firingPointerId = e.pointerId;
+        try { touchFireButton.setPointerCapture(e.pointerId); } catch (_) {}
+        ensureAudio();
+        triggerFire();
+      });
+      const stopTouchFire = (e) => {
+        if (e.pointerId === firingPointerId) { mouseFiring = false; firingPointerId = null; }
+      };
+      touchFireButton.addEventListener('pointerup', stopTouchFire);
+      touchFireButton.addEventListener('pointercancel', stopTouchFire);
+      touchFireButton.addEventListener('lostpointercapture', stopTouchFire);
 
 
       // Real-Time Top-Right Minimap (Rivers, Roads, Compound, Moving Guards & Girls' Location!)
