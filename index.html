@@ -499,6 +499,128 @@
     }
     .overlay-btn:hover { background: #85be4a; }
 
+    /* Top-Right Minimap & Eye View Switcher */
+    #top-right-hud {
+      pointer-events: auto;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .icon-btn {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: rgba(24, 20, 22, 0.84);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #f4f2ee;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.38);
+      transition: all 0.16s ease;
+    }
+    .icon-btn:hover {
+      background: rgba(58, 46, 50, 0.94);
+      border-color: #f2b83b;
+      color: #fff;
+    }
+    .icon-btn.active {
+      background: #72a63c;
+      color: #111b0d;
+      border-color: #a1d464;
+    }
+    #minimap-wrap {
+      position: relative;
+      width: 148px;
+      height: 148px;
+      border-radius: 14px;
+      overflow: hidden;
+      border: 2px solid rgba(255, 255, 255, 0.22);
+      background: rgba(22, 28, 22, 0.88);
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.48);
+    }
+    #minimap-canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+    .minimap-legend {
+      position: absolute;
+      bottom: 4px;
+      left: 5px;
+      right: 5px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 9px;
+      font-weight: 700;
+      color: rgba(255, 255, 255, 0.85);
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+      pointer-events: none;
+    }
+
+    /* Bottom-Right "i" Info Button & Controls Popover */
+    #info-wrap {
+      position: fixed;
+      bottom: 14px;
+      right: 14px;
+      z-index: 26;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 8px;
+    }
+    #info-popover {
+      width: 248px;
+      padding: 12px 14px;
+      font-size: 11px;
+      line-height: 1.55;
+      color: #ece8e2;
+      display: none;
+    }
+    #info-popover.open { display: block; }
+    #info-popover h3 {
+      font-size: 12px;
+      font-weight: 700;
+      color: #f2b83b;
+      margin-bottom: 6px;
+      letter-spacing: 0.03em;
+    }
+    .ctrl-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 2px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    }
+    .ctrl-row:last-child { border-bottom: none; }
+
+    /* Headshot Banner Toast */
+    #headshot-toast {
+      position: fixed;
+      top: 22%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.85);
+      padding: 6px 16px;
+      border-radius: 999px;
+      background: rgba(229, 72, 61, 0.92);
+      border: 1px solid #ffd25a;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      pointer-events: none;
+      opacity: 0;
+      z-index: 30;
+      transition: opacity 0.16s ease, transform 0.16s ease;
+      box-shadow: 0 6px 24px rgba(229, 72, 61, 0.5);
+    }
+    #headshot-toast.show {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1.0);
+    }
+
     @media (max-width: 820px) {
       #controls-hint { display: none; }
       #touch-controls { display: flex; }
@@ -545,65 +667,24 @@
       <div id="hud-objective">Objective: Find &amp; Rescue Captive Girl</div>
     </div>
 
-    <div id="top-controls">
-      <button id="btn-cam-iso" class="btn active" title="Main Smooth Orbit Follow View (WASD moves Boy, Drag orbits, Right-Drag pans)">Orbit View</button>
-      <button id="btn-cam-play" class="btn" title="PUBG Over-the-Shoulder View">PUBG View</button>
-      <button id="btn-cam-fly" class="btn" title="Free 3D Fly Camera">Free Fly</button>
-      <button id="btn-audio" class="btn" title="Toggle Ambient Nature Audio">Audio: Off</button>
-      <button id="btn-settings" class="btn" title="Graphics & World Settings">Graphics</button>
-    </div>
-  </div>
-
-  <!-- Collapsible Graphics Drawer -->
-  <div id="settings-drawer" class="hud-panel collapsed">
-    <div>
-      <div class="section-label">Graphics Quality</div>
-      <div class="pill-group">
-        <button class="pill-btn" data-quality="balanced">Balanced</button>
-        <button class="pill-btn" data-quality="high">High</button>
-        <button class="pill-btn active" data-quality="ultra">Ultra Max</button>
-      </div>
-    </div>
-
-    <div>
-      <div class="section-label">Time of Day Lighting</div>
-      <div class="pill-group">
-        <button class="pill-btn" data-time="midday">Midday</button>
-        <button class="pill-btn active" data-time="golden">Golden Sun</button>
-        <button class="pill-btn" data-time="dusk">Dusk</button>
-      </div>
-    </div>
-
-    <div style="display:flex;flex-direction:column;gap:8px;">
-      <div class="toggle-row">
-        <span>Soft Dynamic Shadows</span>
-        <button id="toggle-shadows" class="toggle-switch on" aria-label="Toggle Shadows"></button>
-      </div>
-      <div class="toggle-row">
-        <span>Atmospheric Fog</span>
-        <button id="toggle-fog" class="toggle-switch on" aria-label="Toggle Fog"></button>
-      </div>
-      <div class="toggle-row">
-        <span>Ambient Motion &amp; Particles</span>
-        <button id="toggle-fx" class="toggle-switch on" aria-label="Toggle Effects"></button>
-      </div>
-    </div>
-
-    <div class="telemetry-grid">
-      <div class="metric">
-        <div id="stat-fps" class="metric-val">60</div>
-        <div class="metric-lbl">FPS</div>
-      </div>
-      <div class="metric">
-        <div id="stat-calls" class="metric-val">0</div>
-        <div class="metric-lbl">Draws</div>
-      </div>
-      <div class="metric">
-        <div id="stat-tris" class="metric-val">0k</div>
-        <div class="metric-lbl">Tris</div>
+    <div id="top-right-hud">
+      <button id="btn-eye-view" class="icon-btn" title="Switch View: Orbit View / PUBG View" aria-label="Switch Camera View">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/>
+          <circle cx="12" cy="12" r="3"/>
+        </svg>
+      </button>
+      <div id="minimap-wrap">
+        <canvas id="minimap-canvas" width="148" height="148"></canvas>
+        <div class="minimap-legend">
+          <span style="color:#ff5c52;">● Guards</span>
+          <span style="color:#ffd25a;">★ Girls</span>
+        </div>
       </div>
     </div>
   </div>
+
+  <div id="headshot-toast">HEADSHOT!</div>
 
   <!-- Mobile Touch Controls -->
   <div id="touch-controls">
@@ -619,32 +700,24 @@
       <div></div>
     </div>
     <div id="action-pads">
-      <button id="btn-touch-crouch" class="pad-btn">Crouch</button>
       <button id="btn-touch-fire" class="pad-btn">Fire</button>
     </div>
   </div>
 
-  <!-- Bottom Fast-Travel / Vista Bar -->
-  <div id="bottom-bar">
-    <div id="vista-strip" class="hud-panel">
-      <button class="vista-btn active" data-vista="arrival">1. Entry Bridge</button>
-      <button class="vista-btn" data-vista="square">2. Market Plaza</button>
-      <button class="vista-btn" data-vista="gatehouse">3. Windmill Gate</button>
-      <button class="vista-btn" data-vista="oldtown">4. Bell &amp; Old Town</button>
-      <button class="vista-btn" data-vista="westwoods">5. Pine Falls &amp; Cabins</button>
-      <button class="vista-btn" data-vista="compound">6. Guarded Compound</button>
-      <button class="vista-btn" data-vista="exit">7. Exit Bridge</button>
+  <!-- Bottom-Right "i" Controls Info Button -->
+  <div id="info-wrap">
+    <div id="info-popover" class="hud-panel">
+      <h3>Controls &amp; Mission</h3>
+      <div class="ctrl-row"><span>Move</span><span class="key-cap">WASD</span></div>
+      <div class="ctrl-row"><span>Sprint</span><span class="key-cap">Shift</span></div>
+      <div class="ctrl-row"><span>Jump</span><span class="key-cap">Space</span></div>
+      <div class="ctrl-row"><span>Crouch / Hide</span><span class="key-cap">C</span></div>
+      <div class="ctrl-row"><span>Fire Rifle</span><span class="key-cap">Left Click / F</span></div>
+      <div class="ctrl-row"><span>Rotate Character</span><span class="key-cap">Right Hold + Move</span></div>
+      <div class="ctrl-row"><span>Reload Magazine</span><span class="key-cap">R</span></div>
+      <div class="ctrl-row"><span>Switch View</span><span class="key-cap">Eye Icon</span></div>
     </div>
-
-    <div id="controls-hint" class="hud-panel">
-      <span><span class="key-cap">WASD</span> Move</span>
-      <span><span class="key-cap">Shift</span> Sprint</span>
-      <span><span class="key-cap">Space</span> Jump</span>
-      <span><span class="key-cap">C</span> Crouch</span>
-      <span><span class="key-cap">Click/F</span> Fire</span>
-      <span><span class="key-cap">RMB/V</span> Aim</span>
-      <span><span class="key-cap">Drag</span> Orbit</span>
-    </div>
+    <button id="btn-info" class="icon-btn" title="Controls & Info" aria-label="Controls Info" style="font-size:15px;font-weight:800;font-style:italic;font-family:Georgia,serif;">i</button>
   </div>
 
   <script>
@@ -1135,17 +1208,20 @@
       // 7. BUILDING COLLIDERS & AAA ARCHITECTURAL BUILDERS (34+ Evenly Distributed Buildings!)
       // =========================================================================
       const BUILDING_COLLIDERS = []; // Tight OBB { x, z, hw, hd, rot } or Circle { x, z, r } for close, realistic wall contact!
-      function addBoxCollider(x, z, w, d, rotY) {
-        BUILDING_COLLIDERS.push({ type: 'obb', x, z, hw: w * 0.5, hd: d * 0.5, rot: rotY || 0, r: Math.hypot(w, d) * 0.5 });
+      function addBoxCollider(x, z, w, d, rotY, maxH) {
+        BUILDING_COLLIDERS.push({ type: 'obb', x, z, hw: w * 0.5, hd: d * 0.5, rot: rotY || 0, r: Math.hypot(w, d) * 0.5, maxH: maxH || 99 });
       }
       function addCircleCollider(x, z, r) {
         BUILDING_COLLIDERS.push({ type: 'circle', x, z, r });
       }
-      function resolveCollisions(pos, playerR) {
+      function resolveCollisions(pos, playerR, posY) {
         const pr = playerR || 0.48;
+        const groundBase = getTerrainHeight(pos.x, pos.z);
+        const jumpClearH = (posY !== undefined) ? (posY - groundBase) : 0;
         for (let iter = 0; iter < 3; iter++) {
           for (let i = 0; i < BUILDING_COLLIDERS.length; i++) {
             const c = BUILDING_COLLIDERS[i];
+            if (c.maxH && c.maxH < 2.2 && jumpClearH >= c.maxH * 0.5) continue;
             const dx = pos.x - c.x, dz = pos.z - c.z;
             const maxR = c.r + pr + 0.5;
             if (dx * dx + dz * dz > maxR * maxR) continue; // Fast broadphase cull!
@@ -1770,7 +1846,7 @@
         ];
         yardFences.forEach(([x1, z1, x2, z2]) => {
           const dist = Math.hypot(x2 - x1, z2 - z1);
-          addBoxCollider((x1 + x2) * 0.5, (z1 + z2) * 0.5, 0.5, dist, Math.atan2(x2 - x1, z2 - z1));
+          addBoxCollider((x1 + x2) * 0.5, (z1 + z2) * 0.5, 0.5, dist, Math.atan2(x2 - x1, z2 - z1), 1.35);
           const segs = Math.max(2, Math.round(dist / 3.4));
           const ang = Math.atan2(x2 - x1, z2 - z1);
           const postGeo = new THREE.BoxGeometry(0.22, 1.35, 0.22);
@@ -1849,19 +1925,19 @@
               addMesh(og, bagGeo, MATS.burlap, b * 0.92, 0.34, Math.abs(b) * 0.18);
               if (Math.abs(b) <= 1) addMesh(og, bagGeo, MATS.burlap, b * 0.92, 0.86, Math.abs(b) * 0.18);
             }
-            addBoxCollider(hx, hz, 4.4, 1.2, ang);
+            addBoxCollider(hx, hz, 4.4, 1.2, ang, 1.25);
           } else if (kind === 1) {
             // L-shaped low stone stealth wall + crate
             addMesh(og, new THREE.BoxGeometry(3.8, 1.3, 0.65), MATS.stoneMid, 0, 0.65, 0);
             addMesh(og, new THREE.BoxGeometry(0.65, 1.3, 2.2), MATS.stoneMid, -1.6, 0.65, 1.1);
             addMesh(og, new THREE.BoxGeometry(1.15, 1.05, 1.15), MATS.woodLight, 1.1, 0.52, 0.95);
-            addBoxCollider(hx, hz, 3.8, 1.8, ang);
+            addBoxCollider(hx, hz, 3.8, 1.8, ang, 1.35);
           } else {
             // Stacked hay bales + timber barrels
             addMesh(og, new THREE.BoxGeometry(1.8, 1.15, 1.2), MATS.hay, -0.5, 0.58, 0, 0, 0.15, 0);
             addMesh(og, new THREE.BoxGeometry(1.6, 1.05, 1.15), MATS.hay, 0.9, 0.52, 0.3, 0, -0.2, 0);
             addMesh(og, new THREE.BoxGeometry(1.5, 0.95, 1.1), MATS.hay, 0.1, 1.55, 0.1, 0, 0.08, 0);
-            addBoxCollider(hx, hz, 3.2, 1.6, ang);
+            addBoxCollider(hx, hz, 3.2, 1.6, ang, 1.35);
           }
           scene.add(og);
         }
@@ -2520,6 +2596,13 @@
       let dmgFlashTimer = 0;
       let guardsKilled = 0;
 
+      const headshotToastEl = document.getElementById('headshot-toast');
+      let hsToastTimer = 0;
+      function showHeadshotToast() {
+        headshotToastEl.classList.add('show');
+        hsToastTimer = 0.85;
+      }
+
       function updateCombatHud() {
         const pct = clamp((player.hp / player.maxHp) * 100, 0, 100);
         hudHpFill.style.width = pct + '%';
@@ -2734,7 +2817,7 @@
           depthWrite: false,
         });
         const coneMesh = new THREE.Mesh(
-          new THREE.CircleGeometry(18.0, 18, Math.PI / 2 - 0.52, 1.04).rotateX(-Math.PI / 2),
+          new THREE.CircleGeometry(24.0, 18, Math.PI / 2 - 0.68, 1.36).rotateX(-Math.PI / 2),
           coneMat
         );
         coneMesh.position.y = 0.14;
@@ -2761,8 +2844,8 @@
           y: gy,
           z: startPt[1],
           yaw: 0,
-          hp: 100,
-          maxHp: 100,
+          hp: 70,
+          maxHp: 70,
           state: 'patrol', // 'patrol' | 'alert' | 'dead'
           reactTimer: 0,
           fireCooldown: 0.6,
@@ -2860,9 +2943,67 @@
         hudObjective.style.color = '#8fd14f';
       }
 
+      // 10 Randomly Distributed 3D Medikits (+40 HP pickup, bobbing + glow ring + heal chime!)
+      const MEDIKITS = [];
+      const medikitWhite = flatMat(0xf7f5f0, 0.5, 0.05);
+      const medikitRed = flatMat(0xd92b2b, 0.5, 0.05);
+      const healSparkMat = new THREE.MeshBasicMaterial({ color: 0x56e068 });
+
+      function playHealSfx() {
+        if (!audioOn || !audioCtx) return;
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(520, now);
+        osc.frequency.exponentialRampToValueAtTime(880, now + 0.18);
+        g.gain.setValueAtTime(0.18, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+        osc.connect(g); g.connect(audioCtx.destination);
+        osc.start(now); osc.stop(now + 0.24);
+      }
+
+      function spawnMedikits() {
+        while (MEDIKITS.length) scene.remove(MEDIKITS.pop().group);
+        let placed = 0;
+        for (let att = 0; att < 600 && placed < 10; att++) {
+          const mx = (Math.random() * 2 - 1) * 145;
+          const mz = -172 + Math.random() * 322;
+          if (Math.abs(mz - getCreekZ(mx)) < 6.5 && mx > -135 && mx < 38) continue;
+          if (isNearBuilding(mx, mz, 2.0)) continue;
+          const my = getTerrainHeight(mx, mz);
+          if (my < 0.05 || my > 9.0) continue;
+          let tooClose = false;
+          for (let j = 0; j < MEDIKITS.length; j++) {
+            if (Math.hypot(mx - MEDIKITS[j].x, mz - MEDIKITS[j].z) < 28) { tooClose = true; break; }
+          }
+          if (tooClose) continue;
+
+          const mg = new THREE.Group();
+          mg.position.set(mx, my, mz);
+          const boxG = new THREE.Group();
+          boxG.position.y = 0.65;
+          addMesh(boxG, new THREE.BoxGeometry(1.15, 0.65, 0.85), medikitWhite, 0, 0, 0);
+          addMesh(boxG, new THREE.BoxGeometry(0.56, 0.08, 0.18), medikitRed, 0, 0.34, 0);
+          addMesh(boxG, new THREE.BoxGeometry(0.18, 0.08, 0.56), medikitRed, 0, 0.34, 0);
+          addMesh(boxG, new THREE.BoxGeometry(0.36, 0.14, 0.08), medikitRed, 0, 0.36, -0.32);
+          mg.add(boxG);
+          const glowRing = new THREE.Mesh(
+            new THREE.RingGeometry(0.75, 0.98, 20).rotateX(-Math.PI / 2),
+            new THREE.MeshBasicMaterial({ color: 0x56e068, transparent: true, opacity: 0.72, side: THREE.DoubleSide, depthWrite: false })
+          );
+          glowRing.position.y = 0.08;
+          mg.add(glowRing);
+          scene.add(mg);
+          MEDIKITS.push({ group: mg, boxG, x: mx, y: my, z: mz, active: true, phase: Math.random() * 6.28 });
+          placed++;
+        }
+      }
+
       function buildAllGuards() {
         prepareGuardTemplate();
         GUARD_SPAWNS.forEach((sp, i) => createGuardInstance(sp, i));
+        spawnMedikits();
         buildCaptiveGirl();
         captiveGirl.rescued = false;
         captiveGirl.levelWon = false;
@@ -2915,6 +3056,7 @@
 
         // Clear active bullets
         while (BULLETS.length) scene.remove(BULLETS.pop().mesh);
+        spawnMedikits();
         // Reset all 16 guards
         GUARDS.forEach((g) => {
           g.hp = g.maxHp;
@@ -2941,6 +3083,7 @@
       }
 
       function updateGuardsAndBullets(dt) {
+        if (hsToastTimer > 0) { hsToastTimer -= dt; if (hsToastTimer <= 0) headshotToastEl.classList.remove('show'); }
         if (dmgFlashTimer > 0) {
           dmgFlashTimer -= dt;
           if (dmgFlashTimer <= 0) damageVignette.style.opacity = '0';
@@ -3133,8 +3276,10 @@
             for (let gIdx = 0; gIdx < GUARDS.length; gIdx++) {
               const g = GUARDS[gIdx];
               if (g.state === 'dead') continue;
-              if (Math.hypot(b.x - g.x, b.z - g.z) < 0.95 && b.y >= g.y && b.y <= g.y + 2.75) {
-                g.hp = Math.max(0, g.hp - 38);
+              if (Math.hypot(b.x - g.x, b.z - g.z) < 0.95 && b.y >= g.y && b.y <= g.y + 2.9) {
+                const isHeadshot = b.y >= g.y + 1.92;
+                g.hp = isHeadshot ? 0 : Math.max(0, g.hp - 38);
+                if (isHeadshot) showHeadshotToast();
                 spawnSparks(b.x, b.y, b.z, 10);
                 hitMarkerTimer = 0.16;
                 crosshairEl.classList.add('hit');
@@ -3160,7 +3305,7 @@
           } else if (!remove && !b.fromPlayer && !player.dead) {
             // Guard bullet vs Player
             if (Math.hypot(b.x - player.pos.x, b.z - player.pos.z) < 0.78 && b.y >= player.pos.y && b.y <= player.pos.y + 2.6) {
-              damagePlayer(12);
+              damagePlayer(15);
               spawnSparks(b.x, b.y, b.z, 5);
               remove = true;
             }
@@ -3169,6 +3314,28 @@
           if (remove) {
             scene.remove(b.mesh);
             BULLETS.splice(i, 1);
+          }
+        }
+
+        // 2B) Update Medikits (bobbing + automatic +40 HP pickup when damaged!)
+        for (let i = 0; i < MEDIKITS.length; i++) {
+          const mk = MEDIKITS[i];
+          if (!mk.active) continue;
+          mk.phase += dt * 2.6;
+          mk.boxG.rotation.y += dt * 1.4;
+          mk.boxG.position.y = 0.65 + Math.sin(mk.phase) * 0.14;
+          if (!player.dead && player.hp < player.maxHp && Math.hypot(player.pos.x - mk.x, player.pos.z - mk.z) < 2.1) {
+            mk.active = false;
+            mk.group.visible = false;
+            player.hp = Math.min(player.maxHp, player.hp + 40);
+            updateCombatHud();
+            playHealSfx();
+            for (let k = 0; k < 8; k++) {
+              const sm = new THREE.Mesh(sparkGeo, healSparkMat);
+              sm.position.set(mk.x, mk.y + 0.8, mk.z);
+              scene.add(sm);
+              HIT_SPARKS.push({ mesh: sm, vx: randRange(-3, 3), vy: randRange(2, 5.5), vz: randRange(-3, 3), life: 0.38 });
+            }
           }
         }
 
@@ -3259,21 +3426,19 @@
       }
 
       const keys = Object.create(null);
+      let shiftHeld = false;
       window.addEventListener('keydown', (e) => {
         keys[e.code] = true;
+        if (e.key === 'Shift' || e.shiftKey) shiftHeld = true;
         if (e.code === 'KeyR' && !e.repeat && !player.reloading && player.ammo < player.maxAmmo) { player.reloading = true; player.reloadTimer = 0; updateCombatHud(); }
-        if (e.code === 'KeyC' && !e.repeat) {
-          player.crouching = !player.crouching;
-          document.getElementById('btn-touch-crouch').classList.toggle('active', player.crouching);
-        }
+
         if (e.code === 'KeyV' && !e.repeat && camMode !== 'fly') {
           player.aiming = !player.aiming;
         }
         if (e.code === 'Space' && camMode !== 'fly' && player.grounded && !e.repeat) {
-          player.velY = 9.0;
+          player.velY = 10.8;
           player.grounded = false;
-          player.crouching = false;
-          document.getElementById('btn-touch-crouch').classList.remove('active');
+
         }
         if (e.code === 'KeyF' && camMode !== 'fly') {
           triggerFire();
@@ -3282,7 +3447,8 @@
           releaseCaptiveGirl();
         }
       });
-      window.addEventListener('keyup', (e) => { keys[e.code] = false; });
+      window.addEventListener('keyup', (e) => { keys[e.code] = false; if (e.key === 'Shift' || !e.shiftKey) shiftHeld = false; });
+      window.addEventListener('blur', () => { shiftHeld = false; for (const k in keys) keys[k] = false; });
 
       function playGunshotSfx() {
         if (!audioOn || !audioCtx) return;
@@ -3301,103 +3467,117 @@
       const raycaster = new THREE.Raycaster();
       const mouseNdc = new THREE.Vector2();
 
-      function triggerFire() {
+      function triggerFire(clientX, clientY) {
         if (player.dead || player.reloading) return;
         const nowSec = performance.now() * 0.001;
         if (nowSec < player.nextShotTime) return;
         if (player.ammo <= 0) {
           player.reloading = true; player.reloadTimer = 0; updateCombatHud(); return;
         }
-        player.nextShotTime = nowSec + 0.14; // Fast responsive full-auto fire clock
+        player.nextShotTime = nowSec + 0.16;
         player.ammo--;
         if (player.ammo === 0) { player.reloading = true; player.reloadTimer = 0; }
         updateCombatHud();
 
         player.firing = true;
         player.fireTimer = 0;
-        if (player.muzzleLight) player.muzzleLight.intensity = 4.2;
+        if (player.muzzleLight) player.muzzleLight.intensity = 3.8;
         if (player.muzzleFlash) player.muzzleFlash.visible = true;
 
-        // Aim straight through the center crosshair (character sits lower-left so crosshair is 100% unobstructed!)
-        player.targetYaw = orbitState.theta + Math.PI;
-        player.yaw = player.targetYaw;
-        raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
-        const targetPt = raycaster.ray.origin.clone().addScaledVector(raycaster.ray.direction, 80);
-        let bestGuardDist = 80;
-        for (let gi = 0; gi < GUARDS.length; gi++) {
-          const g = GUARDS[gi];
-          if (g.state === 'dead') continue;
-          const gCenter = new THREE.Vector3(g.x, g.y + 1.45, g.z);
-          const toG = gCenter.clone().sub(raycaster.ray.origin);
-          const proj = toG.dot(raycaster.ray.direction);
-          if (proj > 2 && proj < bestGuardDist) {
-            const closest = raycaster.ray.origin.clone().addScaledVector(raycaster.ray.direction, proj);
-            if (closest.distanceTo(gCenter) < 1.5) {
-              bestGuardDist = proj;
-              targetPt.copy(gCenter);
+        let aimDir = new THREE.Vector3(Math.sin(player.yaw), 0, Math.cos(player.yaw));
+        if (camMode === 'play') {
+          player.targetYaw = orbitState.theta + Math.PI;
+          camera.getWorldDirection(aimDir);
+          orbitState.desiredPhi = clamp(orbitState.desiredPhi - 0.02, 0.68, 1.52);
+        } else if (clientX !== undefined && clientY !== undefined) {
+          mouseNdc.x = (clientX / window.innerWidth) * 2 - 1;
+          mouseNdc.y = -(clientY / window.innerHeight) * 2 + 1;
+          raycaster.setFromCamera(mouseNdc, camera);
+
+          let bestTarget = null;
+          let bestDist = 1e9;
+          const tmpSphere = new THREE.Sphere();
+          const tmpPt = new THREE.Vector3();
+          for (let i = 0; i < GUARDS.length; i++) {
+            const g = GUARDS[i];
+            if (g.state === 'dead') continue;
+            // Head sphere check (instant headshot!)
+            tmpSphere.center.set(g.x, g.y + 2.28, g.z);
+            tmpSphere.radius = 0.62;
+            if (raycaster.ray.intersectSphere(tmpSphere, tmpPt)) {
+              const d = camera.position.distanceTo(tmpPt);
+              if (d < bestDist) { bestDist = d; bestTarget = new THREE.Vector3(g.x, g.y + 2.28, g.z); }
+            }
+            // Body sphere check
+            tmpSphere.center.set(g.x, g.y + 1.35, g.z);
+            tmpSphere.radius = 0.82;
+            if (raycaster.ray.intersectSphere(tmpSphere, tmpPt)) {
+              const d = camera.position.distanceTo(tmpPt);
+              if (d < bestDist) { bestDist = d; bestTarget = new THREE.Vector3(g.x, g.y + 1.35, g.z); }
+            }
+          }
+
+          if (!bestTarget) {
+            const aimPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -(player.pos.y + 1.55));
+            const hitPt = new THREE.Vector3();
+            if (raycaster.ray.intersectPlane(aimPlane, hitPt)) bestTarget = hitPt;
+          }
+
+          if (bestTarget) {
+            const ox0 = player.pos.x, oy0 = player.pos.y + (player.crouching ? 1.15 : 1.65), oz0 = player.pos.z;
+            const dx = bestTarget.x - ox0, dy = bestTarget.y - oy0, dz = bestTarget.z - oz0;
+            if (Math.hypot(dx, dz) > 0.4) {
+              player.targetYaw = Math.atan2(dx, dz);
+              player.yaw = player.targetYaw;
+              aimDir.set(dx, dy, dz).normalize();
             }
           }
         }
-        const ox = player.pos.x + Math.sin(player.yaw) * 1.1;
-        const oy = player.pos.y + (player.crouching ? 1.25 : 1.78);
-        const oz = player.pos.z + Math.cos(player.yaw) * 1.1;
-        const aimDir = targetPt.sub(new THREE.Vector3(ox, oy, oz)).normalize();
-        orbitState.desiredPhi = clamp(orbitState.desiredPhi - 0.012, 0.72, 1.48);
-        crosshairEl.classList.add('firing');
-        setTimeout(() => crosshairEl.classList.remove('firing'), 95);
+
+        const ox = player.pos.x + aimDir.x * 1.1;
+        const oy = player.pos.y + (player.crouching ? 1.15 : 1.65);
+        const oz = player.pos.z + aimDir.z * 1.1;
         spawnBullet(ox, oy, oz, aimDir.x, aimDir.y, aimDir.z, true);
-        alertNearbyGuards(player.pos.x, player.pos.z, 40);
+        alertNearbyGuards(player.pos.x, player.pos.z, 26);
         playGunshotSfx();
       }
 
-      let isDragging = false, mouseFiring = false, dragButton = 0, lastX = 0, lastY = 0;
-      let hasHoverPos = false;
-      function isPointerLocked() { return document.pointerLockElement === canvas; }
+      // STRICT MOUSE CONTROLS: Left Click = Fire ONLY | Right Press + Move = Rotate Character & Scene ONLY!
+      let isRightRotating = false, lastX = 0, lastY = 0;
 
       canvas.addEventListener('pointerdown', (e) => {
-        if (camMode !== 'fly' && e.button === 2) { player.aiming = true; return; }
-        isDragging = true; dragButton = e.button; lastX = e.clientX; lastY = e.clientY;
-        if (camMode !== 'fly' && e.button === 0) {
-          mouseFiring = true;
-          if (!isPointerLocked()) {
-            try { if (canvas.requestPointerLock) canvas.requestPointerLock(); } catch (_) {}
-          }
-          triggerFire();
+        if (e.button === 0) {
+          triggerFire(e.clientX, e.clientY);
+        } else if (e.button === 2) {
+          isRightRotating = true;
+          lastX = e.clientX;
+          lastY = e.clientY;
+          try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
         }
-        if (!isPointerLocked()) { try { canvas.setPointerCapture(e.pointerId); } catch (_) {} }
       });
 
       canvas.addEventListener('pointermove', (e) => {
-        const locked = isPointerLocked();
-        let dx = 0, dy = 0;
-        if (locked) {
-          dx = e.movementX || 0;
-          dy = e.movementY || 0;
-        } else {
-          if (!hasHoverPos) { lastX = e.clientX; lastY = e.clientY; hasHoverPos = true; return; }
-          dx = e.clientX - lastX;
-          dy = e.clientY - lastY;
-          lastX = e.clientX; lastY = e.clientY;
-          if (!isDragging && camMode === 'fly') return;
-        }
+        if (!isRightRotating) return;
+        const dx = e.clientX - lastX;
+        const dy = e.clientY - lastY;
+        lastX = e.clientX;
+        lastY = e.clientY;
 
-        const sens = player.aiming ? 0.0024 : 0.0044;
-        if (camMode === 'iso' || camMode === 'play') {
-          orbitFollowing = true;
-          orbitState.desiredTheta -= dx * sens;
-          orbitState.desiredPhi = clamp(orbitState.desiredPhi - dy * sens * 0.85, 0.72, 1.48);
-          player.targetYaw = orbitState.desiredTheta + Math.PI;
+        const sens = player.aiming ? 0.0028 : 0.0052;
+        orbitState.desiredTheta -= dx * sens;
+        player.targetYaw = orbitState.desiredTheta + Math.PI;
+        if (camMode === 'play') {
+          orbitState.desiredPhi = clamp(orbitState.desiredPhi - dy * sens * 0.85, 0.72, 1.52);
         } else {
-          fpState.yaw -= dx * 0.0042;
-          fpState.pitch = clamp(fpState.pitch - dy * 0.0038, -1.48, 1.48);
+          orbitState.desiredPhi = clamp(orbitState.desiredPhi - dy * sens * 0.75, 0.45, 1.35);
         }
       });
 
       canvas.addEventListener('pointerup', (e) => {
-        if (e.button === 2) player.aiming = false;
-        if (e.button === 0) mouseFiring = false;
-        isDragging = false;
-        try { canvas.releasePointerCapture(e.pointerId); } catch (_) {}
+        if (e.button === 2) {
+          isRightRotating = false;
+          try { canvas.releasePointerCapture(e.pointerId); } catch (_) {}
+        }
       });
       canvas.addEventListener('contextmenu', (e) => e.preventDefault());
       canvas.addEventListener('wheel', (e) => {
@@ -3436,7 +3616,7 @@
           if (Math.hypot(x - b.x, z - b.z) < 2.8) { inBush = true; break; }
         }
         const onRoad = getMinRoadDist(x, z) < 1.2 || getBridgeDeckHeight(x, z) > -100;
-        const hidden = inBush || (player.crouching && !onRoad);
+        const hidden = inBush;
         if (hidden !== player.hiddenInCover) {
           player.hiddenInCover = hidden;
           stealthPillEl.textContent = inBush ? 'Hidden in Bush' : (hidden ? 'Hidden in Grass' : 'Exposed');
@@ -3447,7 +3627,7 @@
       function updatePlayerAndCamera(dt) {
         const fwdInput = (keys.KeyW || keys.ArrowUp ? 1 : 0) - (keys.KeyS || keys.ArrowDown ? 1 : 0);
         const sideInput = (keys.KeyD || keys.ArrowRight ? 1 : 0) - (keys.KeyA || keys.ArrowLeft ? 1 : 0);
-        const sprinting = !!(keys.ShiftLeft || keys.ShiftRight) && !player.crouching && !player.aiming && (fwdInput !== 0 || sideInput !== 0);
+        const sprinting = (shiftHeld || !!(keys.ShiftLeft || keys.ShiftRight)) && !player.aiming && (fwdInput !== 0 || sideInput !== 0);
 
         if (camMode !== 'fly') {
           if (keys.KeyQ) orbitState.desiredTheta += 2.0 * dt;
@@ -3465,7 +3645,7 @@
           moveForward.set(-Math.sin(orbitState.theta), 0, -Math.cos(orbitState.theta));
           moveRight.set(Math.cos(orbitState.theta), 0, -Math.sin(orbitState.theta));
 
-          const maxSpeed = sprinting ? 14.2 : (player.crouching ? 4.8 : (player.aiming ? 5.6 : 9.0));
+          const maxSpeed = sprinting ? 18.5 : (player.aiming ? 6.0 : 9.2);
           let desiredVx = 0, desiredVz = 0;
           if (moving) {
             orbitFollowing = true;
@@ -3490,7 +3670,7 @@
           player.pos.z = clamp(player.pos.z + player.velZ * dt, -HALF_D + 16, HALF_D - 16);
 
           // Tight OBB push-out sliding (lets character walk right up against walls without invisible barrier or jerking!)
-          resolveCollisions(player.pos, 0.42);
+          resolveCollisions(player.pos, 0.42, player.pos.y);
           if (getWalkableHeight(player.pos.x, player.pos.z) <= WATER_LEVEL + 0.15) {
             player.pos.x = prevX; player.pos.z = prevZ;
             player.velX *= 0.2; player.velZ *= 0.2;
@@ -3512,7 +3692,7 @@
           // Update uploaded FBX Pistol Walk animation if active
           if (player.useFbx && player.fbxMixer && player.fbxAction) {
             const curSpd = Math.hypot(player.velX, player.velZ);
-            const targetTS = !player.grounded ? 0.2 : (curSpd > 0.35 ? clamp(curSpd / 8.2, 0.45, 1.75) : 0.0);
+            const targetTS = !player.grounded ? 0.25 : (curSpd > 0.35 ? clamp(curSpd / 7.8, 0.55, 2.25) : 0.0);
             player.fbxAction.timeScale += (targetTS - player.fbxAction.timeScale) * (1 - Math.exp(-12 * dt));
             player.fbxMixer.update(dt);
             if (player.fbxRifle && player.rightHandBone) {
@@ -3587,7 +3767,7 @@
 
           if (player.firing) {
             player.fireTimer += dt;
-            const kick = Math.sin(Math.min(1, player.fireTimer * 16) * Math.PI) * 0.32;
+            const kick = 0;
             r.armR.rotation.x = -1.25 - kick; r.elbowR.rotation.x = -0.3;
             r.armL.rotation.x = -1.05 - kick * 0.5; r.elbowL.rotation.x = -0.5; r.armL.rotation.y = 0.45;
             player.muzzleLight.intensity = Math.max(0, 3.8 * (1 - player.fireTimer * 10));
@@ -3697,130 +3877,49 @@
       }
 
       // =========================================================================
-      // 13. AUDIO, GRAPHICS PRESETS & UI WIRING
+      // 13. EYE VIEW SWITCHER, "i" CONTROLS POPOVER, AUDIO & REAL-TIME MINIMAP
       // =========================================================================
-      let audioCtx = null, audioGain = null, audioOn = false;
-      function toggleAudio() {
-        const btn = document.getElementById('btn-audio');
+      let audioCtx = null, audioOn = false;
+      function ensureAudio() {
         if (!audioCtx) {
           const AC = window.AudioContext || window.webkitAudioContext;
-          if (!AC) return;
-          audioCtx = new AC();
-          const bufSize = audioCtx.sampleRate * 2;
-          const noiseBuf = audioCtx.createBuffer(1, bufSize, audioCtx.sampleRate);
-          const data = noiseBuf.getChannelData(0);
-          let last = 0;
-          for (let i = 0; i < bufSize; i++) {
-            const w = Math.random() * 2 - 1;
-            data[i] = (last + 0.03 * w) / 1.03;
-            last = data[i];
-          }
-          const src = audioCtx.createBufferSource(); src.buffer = noiseBuf; src.loop = true;
-          const filter = audioCtx.createBiquadFilter(); filter.type = 'bandpass'; filter.frequency.value = 340; filter.Q.value = 0.7;
-          audioGain = audioCtx.createGain(); audioGain.gain.value = 0.0;
-          src.connect(filter); filter.connect(audioGain); audioGain.connect(audioCtx.destination);
-          src.start();
+          if (AC) { audioCtx = new AC(); audioOn = true; }
         }
-        if (audioCtx.state === 'suspended') audioCtx.resume();
-        audioOn = !audioOn;
-        audioGain.gain.setTargetAtTime(audioOn ? 0.16 : 0.0, audioCtx.currentTime, 0.25);
-        btn.textContent = audioOn ? 'Audio: On' : 'Audio: Off';
-        btn.classList.toggle('active', audioOn);
+        if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
       }
+      window.addEventListener('pointerdown', ensureAudio, { once: true });
 
-      let fxEnabled = true;
-      function setQuality(level) {
-        if (level === 'balanced') { renderer.setPixelRatio(1.0); sunLight.shadow.mapSize.set(1024, 1024); }
-        else if (level === 'high') { renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5)); sunLight.shadow.mapSize.set(2048, 2048); }
-        else { renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2.0)); const m = Math.min(4096, renderer.capabilities.maxTextureSize || 2048); sunLight.shadow.mapSize.set(m, m); }
-        if (sunLight.shadow.map) { sunLight.shadow.map.dispose(); sunLight.shadow.map = null; }
-        handleResize();
-      }
-
-      const TIME_PRESETS = {
-        midday: { sunPos: [72, 102, 50], sunColor: 0xfff1d6, sunInt: 1.4, hemiSky: 0xd2e8ff, hemiGnd: 0x3a2e32, hemiInt: 0.62, skyTop: 0x4b93df, skyHor: 0xc5e4f9, fogColor: 0xa9d2ee, fogNear: 85, fogFar: 265, exposure: 0.98 },
-        golden: { sunPos: [82, 58, 52], sunColor: 0xffcc88, sunInt: 1.5, hemiSky: 0xffdcb0, hemiGnd: 0x3a2e32, hemiInt: 0.58, skyTop: 0x4374b3, skyHor: 0xf4be8a, fogColor: 0xdfb895, fogNear: 75, fogFar: 245, exposure: 0.98 },
-        dusk: { sunPos: [-82, 28, -58], sunColor: 0x9ab4ff, sunInt: 0.72, hemiSky: 0x4e6699, hemiGnd: 0x261e22, hemiInt: 0.45, skyTop: 0x141d38, skyHor: 0x4b587c, fogColor: 0x2e3b59, fogNear: 65, fogFar: 215, exposure: 0.92 },
-      };
-
-      function setTimeOfDay(key) {
-        const p = TIME_PRESETS[key]; if (!p) return;
-        sunOffset.set(p.sunPos[0], p.sunPos[1], p.sunPos[2]);
-        sunLight.color.copy(srgbColor(p.sunColor)); sunLight.intensity = p.sunInt;
-        hemiLight.color.copy(srgbColor(p.hemiSky)); hemiLight.groundColor.copy(srgbColor(p.hemiGnd)); hemiLight.intensity = p.hemiInt;
-        skyUniforms.uTopColor.value.setHex(p.skyTop); skyUniforms.uHorizonColor.value.setHex(p.skyHor);
-        skyUniforms.uSunDir.value.copy(sunOffset).normalize(); skyUniforms.uSunColor.value.setHex(p.sunColor);
-        waterUniforms.uSunDir.value.copy(sunOffset).normalize(); waterUniforms.uSunColor.value.setHex(p.sunColor);
-        fog.color.copy(srgbColor(p.fogColor)); fog.near = p.fogNear; fog.far = p.fogFar;
-        scene.background.setHex(p.fogColor); renderer.toneMappingExposure = p.exposure;
-      }
-
-      const btnPlay = document.getElementById('btn-cam-play');
-      const btnIso = document.getElementById('btn-cam-iso');
-      const btnFly = document.getElementById('btn-cam-fly');
-
+      const btnEye = document.getElementById('btn-eye-view');
       function setCameraMode(mode) {
         camMode = mode;
-        btnPlay.classList.toggle('active', mode === 'play');
-        btnIso.classList.toggle('active', mode === 'iso');
-        btnFly.classList.toggle('active', mode === 'fly');
+        btnEye.classList.toggle('active', mode === 'play');
         if (mode === 'play') {
-          orbitState.desiredRadius = 8.8; orbitState.desiredPhi = 1.24; camera.fov = 50; camera.updateProjectionMatrix();
-        } else if (mode === 'iso') {
-          orbitState.desiredRadius = 34; orbitState.desiredPhi = 0.96; orbitFollowing = true;
+          orbitState.desiredRadius = 8.8;
+          orbitState.desiredPhi = 1.24;
+          orbitState.desiredTheta = player.yaw - Math.PI;
+          camera.fov = 50;
+          camera.updateProjectionMatrix();
         } else {
-          fpState.pos.set(player.pos.x, player.pos.y + 18, player.pos.z + 20);
-          fpState.yaw = 0; fpState.pitch = -0.3;
+          orbitState.desiredRadius = 26;
+          orbitState.desiredPhi = 0.90;
+          orbitFollowing = true;
+          camera.fov = 46;
+          camera.updateProjectionMatrix();
         }
       }
 
-      btnPlay.addEventListener('click', () => setCameraMode('play'));
-      btnIso.addEventListener('click', () => { setCameraMode('iso'); recenterOnPlayer(); });
-      btnFly.addEventListener('click', () => setCameraMode('fly'));
+      btnEye.addEventListener('click', () => {
+        setCameraMode(camMode === 'iso' ? 'play' : 'iso');
+      });
 
-      document.getElementById('btn-audio').addEventListener('click', toggleAudio);
+      const infoPopover = document.getElementById('info-popover');
+      document.getElementById('btn-info').addEventListener('click', (e) => {
+        const open = infoPopover.classList.toggle('open');
+        e.currentTarget.classList.toggle('active', open);
+      });
+
       document.getElementById('btn-restart').addEventListener('click', restartMission);
-      rescuePrompt.addEventListener('click', releaseCaptiveGirl);
 
-      const drawer = document.getElementById('settings-drawer');
-      document.getElementById('btn-settings').addEventListener('click', (e) => {
-        const closed = drawer.classList.toggle('collapsed');
-        e.currentTarget.classList.toggle('active', !closed);
-      });
-
-      document.querySelectorAll('[data-quality]').forEach((b) => {
-        b.addEventListener('click', () => {
-          document.querySelectorAll('[data-quality]').forEach((x) => x.classList.remove('active'));
-          b.classList.add('active'); setQuality(b.dataset.quality);
-        });
-      });
-      document.querySelectorAll('[data-time]').forEach((b) => {
-        b.addEventListener('click', () => {
-          document.querySelectorAll('[data-time]').forEach((x) => x.classList.remove('active'));
-          b.classList.add('active'); setTimeOfDay(b.dataset.time);
-        });
-      });
-
-      document.getElementById('toggle-shadows').addEventListener('click', (e) => {
-        const on = e.currentTarget.classList.toggle('on'); renderer.shadowMap.enabled = on; sunLight.castShadow = on;
-      });
-      document.getElementById('toggle-fog').addEventListener('click', (e) => {
-        const on = e.currentTarget.classList.toggle('on'); scene.fog = on ? fog : null;
-      });
-      document.getElementById('toggle-fx').addEventListener('click', (e) => {
-        fxEnabled = e.currentTarget.classList.toggle('on');
-        if (pollenPoints) pollenPoints.visible = fxEnabled;
-        smokePuffs.forEach((p) => { p.mesh.visible = fxEnabled; });
-      });
-
-      document.querySelectorAll('.vista-btn').forEach((b) => {
-        b.addEventListener('click', () => {
-          document.querySelectorAll('.vista-btn').forEach((x) => x.classList.remove('active'));
-          b.classList.add('active'); teleportBoyToVista(b.dataset.vista);
-        });
-      });
-
-      // Touch Controls Wiring
       const padMap = { forward: 'KeyW', backward: 'KeyS', left: 'KeyA', right: 'KeyD', sprint: 'ShiftLeft' };
       document.querySelectorAll('.pad-btn[data-move]').forEach((b) => {
         const code = padMap[b.dataset.move]; if (!code) return;
@@ -3828,13 +3927,84 @@
         b.addEventListener('pointerup', () => { keys[code] = false; });
         b.addEventListener('pointerleave', () => { keys[code] = false; });
       });
-      document.getElementById('btn-touch-crouch').addEventListener('click', (e) => {
-        player.crouching = !player.crouching;
-        e.currentTarget.classList.toggle('active', player.crouching);
-      });
-      document.getElementById('btn-touch-fire').addEventListener('click', () => {
-        if (!player.firing) triggerFire();
-      });
+
+
+      // Real-Time Top-Right Minimap (Rivers, Roads, Compound, Moving Guards & Girls' Location!)
+      const mmCanvas = document.getElementById('minimap-canvas');
+      const mmCtx = mmCanvas.getContext('2d');
+      const GIRLS_LOC = { x: -6.5, z: -154 };
+
+      function drawMinimap(tSec) {
+        const W = mmCanvas.width, H = mmCanvas.height;
+        mmCtx.clearRect(0, 0, W, H);
+        mmCtx.fillStyle = '#2d4c29';
+        mmCtx.fillRect(0, 0, W, H);
+
+        const mx = (wx) => ((wx + HALF_W) / WORLD_W) * W;
+        const mz = (wz) => ((wz + HALF_D) / WORLD_D) * H;
+
+        // South & North Rivers
+        mmCtx.fillStyle = '#1e5bb5';
+        mmCtx.fillRect(0, mz(170), W, mz(186) - mz(170));
+        mmCtx.fillRect(0, mz(-214), W, mz(-198) - mz(-214));
+
+        // Roads
+        mmCtx.strokeStyle = '#98867a';
+        mmCtx.lineWidth = 2.4;
+        for (let i = 0; i < ROAD_SEGMENTS.length; i++) {
+          const r = ROAD_SEGMENTS[i];
+          mmCtx.beginPath();
+          mmCtx.moveTo(mx(r.ax), mz(r.az));
+          mmCtx.lineTo(mx(r.bx), mz(r.bz));
+          mmCtx.stroke();
+        }
+
+        // Guarded Compound outline
+        mmCtx.strokeStyle = 'rgba(242, 184, 59, 0.7)';
+        mmCtx.lineWidth = 1.4;
+        mmCtx.strokeRect(mx(-30), mz(-174), mx(30) - mx(-30), mz(-130) - mz(-174));
+
+        // Pulsing Gold Marker for Girls' Holding Cell
+        const gx = mx(GIRLS_LOC.x), gz = mz(GIRLS_LOC.z);
+        const pulse = 5.5 + Math.sin(tSec * 5.0) * 2.2;
+        mmCtx.beginPath();
+        mmCtx.arc(gx, gz, pulse, 0, Math.PI * 2);
+        mmCtx.strokeStyle = 'rgba(255, 210, 90, 0.85)';
+        mmCtx.lineWidth = 1.6;
+        mmCtx.stroke();
+        mmCtx.fillStyle = '#ffd25a';
+        mmCtx.beginPath();
+        mmCtx.arc(gx, gz, 3.6, 0, Math.PI * 2);
+        mmCtx.fill();
+
+        // Live Moving Guards (Red Dots)
+        for (let i = 0; i < GUARDS.length; i++) {
+          const g = GUARDS[i];
+          if (g.state === 'dead') continue;
+          mmCtx.fillStyle = g.state === 'alert' ? '#ff2a22' : '#ff6b57';
+          mmCtx.beginPath();
+          mmCtx.arc(mx(g.x), mz(g.z), g.state === 'alert' ? 3.2 : 2.5, 0, Math.PI * 2);
+          mmCtx.fill();
+        }
+
+        // Player Directional Arrow
+        const px = mx(player.pos.x), pz = mz(player.pos.z);
+        mmCtx.save();
+        mmCtx.translate(px, pz);
+        mmCtx.rotate(-player.yaw + Math.PI);
+        mmCtx.fillStyle = '#a8ff60';
+        mmCtx.strokeStyle = '#0e170b';
+        mmCtx.lineWidth = 1.2;
+        mmCtx.beginPath();
+        mmCtx.moveTo(0, -5.5);
+        mmCtx.lineTo(4.0, 4.2);
+        mmCtx.lineTo(0, 2.0);
+        mmCtx.lineTo(-4.0, 4.2);
+        mmCtx.closePath();
+        mmCtx.fill();
+        mmCtx.stroke();
+        mmCtx.restore();
+      }
 
       function handleResize() {
         const w = Math.max(1, window.innerWidth || document.documentElement.clientWidth || 800);
@@ -3847,10 +4017,8 @@
       // =========================================================================
       // 14. MAIN LOOP
       // =========================================================================
-      const statFps = document.getElementById('stat-fps');
-      const statCalls = document.getElementById('stat-calls');
-      const statTris = document.getElementById('stat-tris');
-      let lastTime = performance.now(), elapsed = 0, frameCount = 0, fpsTimer = 0;
+      let lastTime = performance.now(), elapsed = 0;
+      const fxEnabled = true;
 
       function animate(now) {
         requestAnimationFrame(animate);
@@ -3892,13 +4060,7 @@
         updateGuardsAndBullets(dt);
         renderer.render(scene, camera);
 
-        frameCount++; fpsTimer += dt;
-        if (fpsTimer >= 0.5) {
-          statFps.textContent = Math.round(frameCount / fpsTimer);
-          statCalls.textContent = renderer.info.render.calls;
-          statTris.textContent = (renderer.info.render.triangles / 1000).toFixed(1) + 'k';
-          frameCount = 0; fpsTimer = 0;
-        }
+        drawMinimap(elapsed);
       }
 
       let started = false;
