@@ -4050,8 +4050,8 @@
       function loadRifleShot() {
         if (!audioCtx) return Promise.resolve(null);
         if (!rifleShotLoadPromise) {
-          rifleShotLoadPromise = fetch('assets/audio/rifle-shot.mp3')
-            .then((response) => { if (!response.ok) throw new Error('Could not load rifle-shot.mp3'); return response.arrayBuffer(); })
+          rifleShotLoadPromise = fetch('assets/audio/rifle-shot.wav')
+            .then((response) => { if (!response.ok) throw new Error('Could not load rifle-shot.wav'); return response.arrayBuffer(); })
             .then((data) => audioCtx.decodeAudioData(data))
             .then((buffer) => { rifleShotBuffer = buffer; return buffer; })
             .catch((err) => { console.warn('Rifle sound could not be loaded:', err); rifleShotLoadPromise = null; return null; });
