@@ -2852,6 +2852,7 @@
           fireCooldown: 0.6,
           flashTimer: 0,
           deadTimer: 0,
+          stepTimer: randRange(0.2, 0.8),
         });
       }
 
@@ -2960,7 +2961,7 @@
         osc.frequency.exponentialRampToValueAtTime(880, now + 0.18);
         g.gain.setValueAtTime(0.18, now);
         g.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
-        osc.connect(g); g.connect(audioCtx.destination);
+        osc.connect(g); connectSfx(g, 0);
         osc.start(now); osc.stop(now + 0.24);
       }
 
@@ -3033,6 +3034,7 @@
 
       function damagePlayer(dmg) {
         if (player.dead) return;
+        playDamageSfx();
         player.hp = Math.max(0, player.hp - dmg);
         dmgFlashTimer = 0.25;
         damageVignette.style.opacity = '1';
@@ -3200,7 +3202,7 @@
                   const sy = ((player.pos.y + 1.35) - (g.y + 1.55)) / Math.max(1, distP);
                   const slen = Math.hypot(sx, sy, sz);
                   spawnBullet(g.x + Math.sin(g.yaw) * 0.9, g.y + 1.55, g.z + Math.cos(g.yaw) * 0.9, sx / slen, sy / slen, sz / slen, false);
-                  playGunshotSfx();
+                  playGunshotSfx(g.x, g.z, false);
                 }
               }
             }
@@ -3214,6 +3216,15 @@
           g.y = getWalkableHeight(g.x, g.z);
           g.group.position.set(g.x, g.y, g.z);
           g.group.rotation.y = g.yaw;
+
+          // Nearby patrols create quiet, positional footstep cues without a crowd of overlapping loops.
+          if (moveSpd > 0.2 && distP < 24 && g.state !== 'dead') {
+            g.stepTimer -= dt;
+            if (g.stepTimer <= 0) {
+              playFootstepSfx({ sprint: moveSpd > 5, volume: clamp(0.27 * (1 - distP / 30), 0.035, 0.22), pan: panForWorldX(g.x, g.z), surface: 'grass' });
+              g.stepTimer = moveSpd > 5 ? 0.36 : 0.55;
+            }
+          }
 
           if (g.mixer && g.action) {
             g.action.timeScale = moveSpd > 0.2 ? clamp(moveSpd / 4.2, 0.65, 1.35) : 0.0;
@@ -3265,6 +3276,7 @@
                 const lx = ox * cos - oz * sin, lz = ox * sin + oz * cos;
                 if (Math.abs(lx) < c.hw && Math.abs(lz) < c.hd) {
                   spawnSparks(b.x, b.y, b.z, 4);
+                  playImpactSfx('wood', b.x, b.z);
                   remove = true;
                   break;
                 }
@@ -3282,6 +3294,7 @@
                 g.hp = isHeadshot ? 0 : Math.max(0, g.hp - 38);
                 if (isHeadshot) showHeadshotToast();
                 spawnSparks(b.x, b.y, b.z, 10);
+                playImpactSfx('body', b.x, b.z);
                 hitMarkerTimer = 0.16;
                 crosshairEl.classList.add('hit');
                 const frac = g.hp / g.maxHp;
@@ -3429,10 +3442,12 @@
       const keys = Object.create(null);
       let shiftHeld = false;
       let mouseFiring = false;
+      let footstepTimer = 0;
       window.addEventListener('keydown', (e) => {
+        ensureAudio();
         keys[e.code] = true;
         if (e.key === 'Shift' || e.shiftKey) shiftHeld = true;
-        if (e.code === 'KeyR' && !e.repeat && !player.reloading && player.ammo < player.maxAmmo) { player.reloading = true; player.reloadTimer = 0; updateCombatHud(); }
+        if (e.code === 'KeyR' && !e.repeat && !player.reloading && player.ammo < player.maxAmmo) { player.reloading = true; player.reloadTimer = 0; updateCombatHud(); playReloadSfx(); }
 
         if (e.code === 'KeyV' && !e.repeat && camMode !== 'fly') {
           player.aiming = !player.aiming;
@@ -3440,7 +3455,7 @@
         if (e.code === 'Space' && camMode !== 'fly' && player.grounded && !e.repeat) {
           player.velY = 10.8;
           player.grounded = false;
-
+          playJumpSfx();
         }
         if (e.code === 'KeyF' && camMode !== 'fly') {
           triggerFire();
@@ -3452,34 +3467,21 @@
       window.addEventListener('keyup', (e) => { keys[e.code] = false; if (e.key === 'Shift' || !e.shiftKey) shiftHeld = false; });
       window.addEventListener('blur', () => { mouseFiring = false; shiftHeld = false; for (const k in keys) keys[k] = false; });
 
-      function playGunshotSfx() {
-        if (!audioOn || !audioCtx) return;
-        const now = audioCtx.currentTime;
-        const osc = audioCtx.createOscillator();
-        const g = audioCtx.createGain();
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(190, now);
-        osc.frequency.exponentialRampToValueAtTime(42, now + 0.09);
-        g.gain.setValueAtTime(0.22, now);
-        g.gain.exponentialRampToValueAtTime(0.001, now + 0.11);
-        osc.connect(g); g.connect(audioCtx.destination);
-        osc.start(now); osc.stop(now + 0.12);
-      }
-
       const raycaster = new THREE.Raycaster();
       const mouseNdc = new THREE.Vector2();
       const aimPointNdc = new THREE.Vector2(0, 0.04);
 
       function triggerFire(clientX, clientY) {
         if (player.dead || player.reloading) return;
+        ensureAudio();
         const nowSec = performance.now() * 0.001;
         if (nowSec < player.nextShotTime) return;
         if (player.ammo <= 0) {
-          player.reloading = true; player.reloadTimer = 0; updateCombatHud(); return;
+          player.reloading = true; player.reloadTimer = 0; updateCombatHud(); playReloadSfx(); return;
         }
         player.nextShotTime = nowSec + 0.16;
         player.ammo--;
-        if (player.ammo === 0) { player.reloading = true; player.reloadTimer = 0; }
+        if (player.ammo === 0) { player.reloading = true; player.reloadTimer = 0; playReloadSfx(); }
         updateCombatHud();
 
         player.firing = true;
@@ -3543,7 +3545,7 @@
         const oz = player.pos.z + aimDir.z * 1.1;
         spawnBullet(ox, oy, oz, aimDir.x, aimDir.y, aimDir.z, true);
         alertNearbyGuards(player.pos.x, player.pos.z, 26);
-        playGunshotSfx();
+        playGunshotSfx(player.pos.x, player.pos.z, true);
       }
 
       // STRICT MOUSE CONTROLS: Left Click = Fire ONLY | Right Press + Move = Rotate Character & Scene ONLY!
@@ -3692,11 +3694,29 @@
           if (!player.grounded) {
             player.velY -= 24.0 * dt;
             player.pos.y += player.velY * dt;
-            if (player.pos.y <= groundY) { player.pos.y = groundY; player.velY = 0; player.grounded = true; }
+            if (player.pos.y <= groundY) {
+              const landingForce = Math.abs(player.velY);
+              player.pos.y = groundY; player.velY = 0; player.grounded = true;
+              playLandingSfx(landingForce);
+            }
           } else {
             player.pos.y += (groundY - player.pos.y) * (1 - Math.exp(-18 * dt));
           }
           player.group.position.copy(player.pos);
+
+          // Footfalls follow actual movement cadence and shift timbre by surface.
+          const playerSpeed = Math.hypot(player.velX, player.velZ);
+          if (moving && player.grounded && playerSpeed > 1.1) {
+            footstepTimer -= dt;
+            if (footstepTimer <= 0) {
+              const onBridge = getBridgeDeckHeight(player.pos.x, player.pos.z) > -100;
+              const onRoad = getMinRoadDist(player.pos.x, player.pos.z) < 1.2;
+              playFootstepSfx({ sprint: sprinting, crouch: player.crouching, volume: sprinting ? 0.82 : 0.64, pan: 0, surface: onBridge ? 'wood' : (onRoad ? 'stone' : 'grass') });
+              footstepTimer = sprinting ? 0.29 : (player.crouching ? 0.58 : 0.43);
+            }
+          } else if (!moving || !player.grounded) {
+            footstepTimer = Math.min(footstepTimer, 0.08);
+          }
 
           // Update uploaded FBX Pistol Walk animation if active
           if (player.useFbx && player.fbxMixer && player.fbxAction) {
@@ -3889,14 +3909,222 @@
       // 13. EYE VIEW SWITCHER, "i" CONTROLS POPOVER, AUDIO & REAL-TIME MINIMAP
       // =========================================================================
       let audioCtx = null, audioOn = false;
+      let sfxMasterGain = null, ambienceGain = null, noiseBuffer = null;
+      let rifleShotBuffer = null, rifleShotLoadPromise = null, windSource = null, birdTimerId = 0;
+      function panForWorldX(x, z) {
+        const dx = x - player.pos.x;
+        const dz = (z == null ? player.pos.z : z) - player.pos.z;
+        const rightX = Math.cos(orbitState.theta), rightZ = -Math.sin(orbitState.theta);
+        return clamp((dx * rightX + dz * rightZ) / 20, -0.9, 0.9);
+      }
+
+      function getNoiseBuffer() {
+        if (!audioCtx) return null;
+        if (!noiseBuffer) {
+          noiseBuffer = audioCtx.createBuffer(1, Math.floor(audioCtx.sampleRate * 0.6), audioCtx.sampleRate);
+          const samples = noiseBuffer.getChannelData(0);
+          for (let i = 0; i < samples.length; i++) samples[i] = Math.random() * 2 - 1;
+        }
+        return noiseBuffer;
+      }
+
+      function connectSfx(gainNode, pan) {
+        if (!audioCtx || !sfxMasterGain) return gainNode;
+        if (audioCtx.createStereoPanner) {
+          const panner = audioCtx.createStereoPanner();
+          panner.pan.value = clamp(pan || 0, -1, 1);
+          gainNode.connect(panner);
+          panner.connect(sfxMasterGain);
+        } else gainNode.connect(sfxMasterGain);
+        return gainNode;
+      }
+
+      function playNoiseBurst(volume, duration, filterType, frequency, pan) {
+        if (!audioCtx || !audioOn || !sfxMasterGain) return;
+        const now = audioCtx.currentTime;
+        const source = audioCtx.createBufferSource();
+        const filter = audioCtx.createBiquadFilter();
+        const envelope = audioCtx.createGain();
+        source.buffer = getNoiseBuffer();
+        filter.type = filterType || 'lowpass';
+        filter.frequency.setValueAtTime(frequency || 900, now);
+        envelope.gain.setValueAtTime(0.0001, now);
+        envelope.gain.exponentialRampToValueAtTime(Math.max(0.0002, volume), now + 0.008);
+        envelope.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+        source.connect(filter); filter.connect(envelope); connectSfx(envelope, pan);
+        source.start(now); source.stop(now + duration + 0.02);
+      }
+
+      function playFootstepSfx(options) {
+        if (!audioCtx || !audioOn || !sfxMasterGain) return;
+        const opts = options || {};
+        const now = audioCtx.currentTime;
+        const strength = clamp(opts.volume == null ? 0.6 : opts.volume, 0.02, 1);
+        const surface = opts.surface || 'grass';
+        const baseHz = surface === 'wood' ? 145 : (surface === 'stone' ? 118 : 82);
+        const thud = audioCtx.createOscillator();
+        const thudGain = audioCtx.createGain();
+        thud.type = 'triangle';
+        thud.frequency.setValueAtTime(baseHz * (opts.sprint ? 1.12 : 1), now);
+        thud.frequency.exponentialRampToValueAtTime(baseHz * 0.55, now + 0.09);
+        const body = opts.crouch ? 0.045 : (opts.sprint ? 0.17 : 0.115);
+        thudGain.gain.setValueAtTime(body * strength, now);
+        thudGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.105);
+        thud.connect(thudGain); connectSfx(thudGain, opts.pan || 0);
+        thud.start(now); thud.stop(now + 0.12);
+        playNoiseBurst((surface === 'grass' ? 0.075 : 0.035) * strength * (opts.crouch ? 0.45 : 1), opts.sprint ? 0.095 : 0.07, surface === 'grass' ? 'bandpass' : 'lowpass', surface === 'grass' ? 1250 : (surface === 'wood' ? 720 : 480), opts.pan || 0);
+      }
+
+      function playJumpSfx() {
+        if (!audioCtx || !audioOn) return;
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(170, now);
+        osc.frequency.exponentialRampToValueAtTime(360, now + 0.16);
+        gain.gain.setValueAtTime(0.08, now);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
+        osc.connect(gain); connectSfx(gain, 0);
+        osc.start(now); osc.stop(now + 0.2);
+        playNoiseBurst(0.045, 0.12, 'highpass', 750, 0);
+      }
+
+      function playLandingSfx(force) {
+        if (!audioCtx || !audioOn) return;
+        const now = audioCtx.currentTime;
+        const amount = clamp((force || 4) / 10, 0.35, 1);
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(105, now);
+        osc.frequency.exponentialRampToValueAtTime(48, now + 0.11);
+        gain.gain.setValueAtTime(0.17 * amount, now);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.14);
+        osc.connect(gain); connectSfx(gain, 0);
+        osc.start(now); osc.stop(now + 0.16);
+        playNoiseBurst(0.09 * amount, 0.11, 'lowpass', 520, 0);
+      }
+
+      function playReloadSfx() {
+        if (!audioCtx || !audioOn) return;
+        const now = audioCtx.currentTime;
+        [0, 0.23, 0.7].forEach((offset, index) => {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(index === 1 ? 760 : 420, now + offset);
+          gain.gain.setValueAtTime(0.0001, now + offset);
+          gain.gain.exponentialRampToValueAtTime(0.055, now + offset + 0.004);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.035);
+          osc.connect(gain); connectSfx(gain, 0);
+          osc.start(now + offset); osc.stop(now + offset + 0.04);
+        });
+      }
+
+      function playImpactSfx(kind, x, z) {
+        if (!audioCtx || !audioOn) return;
+        const pan = panForWorldX(x == null ? player.pos.x : x, z == null ? player.pos.z : z);
+        if (kind === 'body') {
+          const now = audioCtx.currentTime;
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'triangle'; osc.frequency.setValueAtTime(180, now); osc.frequency.exponentialRampToValueAtTime(75, now + 0.08);
+          gain.gain.setValueAtTime(0.075, now); gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.1);
+          osc.connect(gain); connectSfx(gain, pan); osc.start(now); osc.stop(now + 0.11);
+        } else {
+          playNoiseBurst(0.12, 0.09, 'bandpass', kind === 'wood' ? 850 : 1250, pan);
+        }
+      }
+
+      function playDamageSfx() {
+        if (!audioCtx || !audioOn) return;
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sawtooth'; osc.frequency.setValueAtTime(125, now); osc.frequency.exponentialRampToValueAtTime(58, now + 0.16);
+        gain.gain.setValueAtTime(0.11, now); gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
+        osc.connect(gain); connectSfx(gain, 0); osc.start(now); osc.stop(now + 0.19);
+      }
+
+      function loadRifleShot() {
+        if (!audioCtx) return Promise.resolve(null);
+        if (!rifleShotLoadPromise) {
+          rifleShotLoadPromise = fetch('assets/audio/rifle-shot.mp3')
+            .then((response) => { if (!response.ok) throw new Error('Could not load rifle-shot.mp3'); return response.arrayBuffer(); })
+            .then((data) => audioCtx.decodeAudioData(data))
+            .then((buffer) => { rifleShotBuffer = buffer; return buffer; })
+            .catch((err) => { console.warn('Rifle sound could not be loaded:', err); rifleShotLoadPromise = null; return null; });
+        }
+        return rifleShotLoadPromise;
+      }
+
+      function playGunshotSfx(x, z, fromPlayer) {
+        if (!audioCtx || !audioOn) return;
+        if (!rifleShotBuffer) {
+          loadRifleShot().then(() => { if (rifleShotBuffer && audioOn) playGunshotSfx(x, z, fromPlayer); });
+          return;
+        }
+        const source = audioCtx.createBufferSource();
+        const shotGain = audioCtx.createGain();
+        const distance = Math.hypot(x - player.pos.x, z - player.pos.z);
+        const loudness = fromPlayer ? 0.82 : clamp(0.85 - distance / 58, 0.12, 0.72);
+        source.buffer = rifleShotBuffer;
+        source.playbackRate.value = randRange(0.985, 1.015);
+        shotGain.gain.value = loudness;
+        source.connect(shotGain); connectSfx(shotGain, fromPlayer ? 0 : panForWorldX(x));
+        source.start();
+      }
+
+      function startAmbientSfx() {
+        if (!audioCtx || windSource || !ambienceGain) return;
+        const source = audioCtx.createBufferSource();
+        const filter = audioCtx.createBiquadFilter();
+        const gain = audioCtx.createGain();
+        source.buffer = getNoiseBuffer(); source.loop = true;
+        filter.type = 'lowpass'; filter.frequency.value = 470; filter.Q.value = 0.4;
+        gain.gain.value = 0.032;
+        source.connect(filter); filter.connect(gain); gain.connect(ambienceGain);
+        source.start(); windSource = source;
+        scheduleBirdCall();
+      }
+
+      function playBirdCall() {
+        if (!audioCtx || !audioOn || !ambienceGain) return;
+        const start = audioCtx.currentTime;
+        const notes = [randRange(1650, 2100), randRange(2050, 2550), randRange(1750, 2250)];
+        notes.forEach((frequency, index) => {
+          const at = start + index * 0.14;
+          const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+          osc.type = 'sine'; osc.frequency.setValueAtTime(frequency, at); osc.frequency.exponentialRampToValueAtTime(frequency * 1.08, at + 0.075);
+          gain.gain.setValueAtTime(0.0001, at); gain.gain.exponentialRampToValueAtTime(0.018, at + 0.012); gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.1);
+          osc.connect(gain); gain.connect(ambienceGain); osc.start(at); osc.stop(at + 0.11);
+        });
+      }
+
+      function scheduleBirdCall() {
+        if (birdTimerId || !audioCtx) return;
+        birdTimerId = window.setTimeout(() => {
+          birdTimerId = 0;
+          if (audioCtx && audioCtx.state === 'running') playBirdCall();
+          scheduleBirdCall();
+        }, randRange(8500, 15500));
+      }
+
       function ensureAudio() {
         if (!audioCtx) {
           const AC = window.AudioContext || window.webkitAudioContext;
-          if (AC) { audioCtx = new AC(); audioOn = true; }
+          if (AC) {
+            audioCtx = new AC(); audioOn = true;
+            sfxMasterGain = audioCtx.createGain(); sfxMasterGain.gain.value = 0.88; sfxMasterGain.connect(audioCtx.destination);
+            ambienceGain = audioCtx.createGain(); ambienceGain.gain.value = 0.28; ambienceGain.connect(audioCtx.destination);
+          }
         }
         if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+        if (audioCtx) { loadRifleShot(); startAmbientSfx(); }
       }
       window.addEventListener('pointerdown', ensureAudio, { once: true });
+      window.addEventListener('keydown', ensureAudio, { once: true });
 
       const btnEye = document.getElementById('btn-eye-view');
       function setCameraMode(mode) {
