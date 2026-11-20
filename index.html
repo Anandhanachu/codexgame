@@ -4,10 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Fernhollow — Dense AAA Open World &amp; Playable Boy Explorer</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/libs/fflate.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/FBXLoader.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/SkeletonUtils.js"></script>
+  <script src="vendor/three-r128.min.js"></script>
+  <script src="vendor/fflate.min.js"></script>
+  <script src="vendor/FBXLoader.js"></script>
+  <script src="vendor/SkeletonUtils.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body {
@@ -3427,6 +3427,7 @@
 
       const keys = Object.create(null);
       let shiftHeld = false;
+      let mouseFiring = false;
       window.addEventListener('keydown', (e) => {
         keys[e.code] = true;
         if (e.key === 'Shift' || e.shiftKey) shiftHeld = true;
@@ -3448,7 +3449,7 @@
         }
       });
       window.addEventListener('keyup', (e) => { keys[e.code] = false; if (e.key === 'Shift' || !e.shiftKey) shiftHeld = false; });
-      window.addEventListener('blur', () => { shiftHeld = false; for (const k in keys) keys[k] = false; });
+      window.addEventListener('blur', () => { mouseFiring = false; shiftHeld = false; for (const k in keys) keys[k] = false; });
 
       function playGunshotSfx() {
         if (!audioOn || !audioCtx) return;
@@ -3547,6 +3548,7 @@
 
       canvas.addEventListener('pointerdown', (e) => {
         if (e.button === 0) {
+          mouseFiring = true;
           triggerFire(e.clientX, e.clientY);
         } else if (e.button === 2) {
           isRightRotating = true;
@@ -3574,11 +3576,14 @@
       });
 
       canvas.addEventListener('pointerup', (e) => {
+        if (e.button === 0) mouseFiring = false;
         if (e.button === 2) {
           isRightRotating = false;
           try { canvas.releasePointerCapture(e.pointerId); } catch (_) {}
         }
       });
+      window.addEventListener('pointerup', (e) => { if (e.button === 0) mouseFiring = false; });
+      window.addEventListener('pointercancel', () => { mouseFiring = false; });
       canvas.addEventListener('contextmenu', (e) => e.preventDefault());
       canvas.addEventListener('wheel', (e) => {
         e.preventDefault();
