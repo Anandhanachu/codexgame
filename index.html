@@ -713,7 +713,8 @@
       <div class="ctrl-row"><span>Jump</span><span class="key-cap">Space</span></div>
       <div class="ctrl-row"><span>Crouch / Hide</span><span class="key-cap">C</span></div>
       <div class="ctrl-row"><span>Fire Rifle</span><span class="key-cap">Left Click / F</span></div>
-      <div class="ctrl-row"><span>Rotate Character</span><span class="key-cap">Right Hold + Move</span></div>
+      <div class="ctrl-row"><span>Aim / Turn View</span><span class="key-cap">Right Hold + Drag</span></div>
+      <div class="ctrl-row"><span>Raise aim toward sky</span><span class="key-cap">Drag upward</span></div>
       <div class="ctrl-row"><span>Reload Magazine</span><span class="key-cap">R</span></div>
       <div class="ctrl-row"><span>Switch View</span><span class="key-cap">Eye Icon</span></div>
     </div>
@@ -3384,7 +3385,7 @@
       // =========================================================================
       // 12. SMOOTH ORBIT MAIN VIEW (FOLLOW + RECENTER) & PUBG / FLY CAMERA CONTROLLER
       // =========================================================================
-      let camMode = 'iso'; // MAIN VIEW = Smooth Orbit View centered on character!
+      let camMode = 'play'; // Start in the shoulder view so free aiming and sky shots work immediately.
       let orbitFollowing = true; // True = smoothly tracks boy; Right-Drag pans freely until Recenter (R) or WASD!
       const orbitState = {
         target: new THREE.Vector3(0, 2.0, 206),
@@ -3399,6 +3400,7 @@
       };
       const fpState = { pos: new THREE.Vector3(0, 22, 210), yaw: 0.0, pitch: -0.25 };
       // Play-view look pitch is independent from the camera's follow position, so it can aim into the sky.
+      const MAX_PLAY_AIM_PITCH = Math.PI * 0.5 - 0.008;
       let playAimPitch = -0.10, desiredPlayAimPitch = -0.10;
       const crosshairEl = document.getElementById('crosshair');
 
@@ -3498,7 +3500,7 @@
           player.targetYaw = orbitState.theta + Math.PI;
           raycaster.setFromCamera(aimPointNdc, camera);
           aimDir.copy(raycaster.ray.direction);
-          desiredPlayAimPitch = clamp(desiredPlayAimPitch - 0.02, -0.72, 1.52);
+          desiredPlayAimPitch = clamp(desiredPlayAimPitch - 0.02, -1.25, MAX_PLAY_AIM_PITCH);
         } else if (clientX !== undefined && clientY !== undefined) {
           mouseNdc.x = (clientX / window.innerWidth) * 2 - 1;
           mouseNdc.y = -(clientY / window.innerHeight) * 2 + 1;
@@ -3531,6 +3533,7 @@
             const aimPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -(player.pos.y + 1.55));
             const hitPt = new THREE.Vector3();
             if (raycaster.ray.intersectPlane(aimPlane, hitPt)) bestTarget = hitPt;
+            else aimDir.copy(raycaster.ray.direction);
           }
 
           if (bestTarget) {
@@ -3544,9 +3547,16 @@
           }
         }
 
-        const ox = player.pos.x + aimDir.x * 1.1;
-        const oy = player.pos.y + (player.crouching ? 1.15 : 1.65);
-        const oz = player.pos.z + aimDir.z * 1.1;
+        const shotOrigin = new THREE.Vector3(
+          player.pos.x + aimDir.x * 1.1,
+          player.pos.y + (player.crouching ? 1.15 : 1.65),
+          player.pos.z + aimDir.z * 1.1
+        );
+        if (camMode === 'play' && player.muzzleFlash) {
+          scene.updateMatrixWorld(true);
+          player.muzzleFlash.getWorldPosition(shotOrigin);
+        }
+        const ox = shotOrigin.x, oy = shotOrigin.y, oz = shotOrigin.z;
         spawnBullet(ox, oy, oz, aimDir.x, aimDir.y, aimDir.z, true);
         alertNearbyGuards(player.pos.x, player.pos.z, 26);
         playGunshotSfx(player.pos.x, player.pos.z, true);
@@ -3580,7 +3590,7 @@
         if (camMode === 'play') {
           // Dragging up raises the reticle independently of the camera's collision-safe orbit.
           const pitchSens = player.aiming ? 0.0042 : 0.0062;
-          desiredPlayAimPitch = clamp(desiredPlayAimPitch - dy * pitchSens, -0.72, 1.52);
+          desiredPlayAimPitch = clamp(desiredPlayAimPitch - dy * pitchSens, -1.25, MAX_PLAY_AIM_PITCH);
         } else {
           orbitState.desiredPhi = clamp(orbitState.desiredPhi - dy * sens * 0.9, 0.35, 1.55);
         }
@@ -3609,6 +3619,8 @@
       }
 
       const moveForward = new THREE.Vector3(), moveRight = new THREE.Vector3(), lookTarget = new THREE.Vector3();
+      const gunAimDir = new THREE.Vector3(), gunForward = new THREE.Vector3(0, 0, 1);
+      const gunParentWorldQ = new THREE.Quaternion(), gunAimWorldQ = new THREE.Quaternion(), gunAimLocalQ = new THREE.Quaternion();
       const zoneNameEl = document.getElementById('zone-name');
       const stealthPillEl = document.getElementById('stealth-pill');
 
@@ -3730,27 +3742,36 @@
             player.fbxAction.timeScale += (targetTS - player.fbxAction.timeScale) * (1 - Math.exp(-12 * dt));
             player.fbxMixer.update(dt);
             if (player.fbxRifle && player.rightHandBone) {
+              if (camMode === 'play') {
+                const pitchCos = Math.cos(playAimPitch);
+                gunAimDir.set(-Math.sin(orbitState.theta) * pitchCos, Math.sin(playAimPitch), -Math.cos(orbitState.theta) * pitchCos).normalize();
+              }
               player.group.updateMatrixWorld(true);
               const posR = new THREE.Vector3();
               player.rightHandBone.getWorldPosition(posR);
               player.fbxRifle.position.copy(posR);
-              if (player.leftHandBone) {
+              if (camMode === 'play') {
+                // Point the visible rifle from the trigger hand along the exact sky-capable aim direction.
+                lookTarget.copy(posR).addScaledVector(gunAimDir, 2.6);
+                player.fbxRifle.up.set(0, 1, 0);
+                player.fbxRifle.lookAt(lookTarget);
+              } else if (player.leftHandBone) {
                 const posL = new THREE.Vector3();
                 player.leftHandBone.getWorldPosition(posL);
                 // Keep rifle level/natural pointing cleanly from trigger hand through support hand
                 player.fbxRifle.up.set(0, 1, 0);
                 player.fbxRifle.lookAt(posL);
-                if (player.firing) {
-                  const kick = Math.sin(Math.min(1, player.fireTimer * 16) * Math.PI);
-                  player.fbxRifle.translateZ(-kick * 0.24);
-                  player.fbxRifle.rotateX(-kick * 0.2);
-                  if (player.muzzleFlash) {
-                    player.muzzleFlash.visible = player.fireTimer < 0.095;
-                    player.muzzleFlash.rotation.z += 0.8;
-                  }
-                }
               } else {
                 player.fbxRifle.rotation.set(0, player.yaw, 0);
+              }
+              if (player.firing) {
+                const kick = Math.sin(Math.min(1, player.fireTimer * 16) * Math.PI);
+                player.fbxRifle.translateZ(-kick * 0.24);
+                player.fbxRifle.rotateX(-kick * 0.2);
+                if (player.muzzleFlash) {
+                  player.muzzleFlash.visible = player.fireTimer < 0.095;
+                  player.muzzleFlash.rotation.z += 0.8;
+                }
               }
             }
             if (player.fbxModel) {
@@ -3823,6 +3844,22 @@
             r.armL.rotation.x += (-armSw - r.armL.rotation.x) * (1 - Math.exp(-12 * dt));
             r.elbowL.rotation.x += ((-0.35 - Math.max(0, armSw * 0.45)) - r.elbowL.rotation.x) * (1 - Math.exp(-12 * dt));
             r.armL.rotation.y += (0.12 - r.armL.rotation.y) * (1 - Math.exp(-12 * dt));
+          }
+
+          if (camMode === 'play' && player.useFbx) {
+            const pitchCos = Math.cos(playAimPitch);
+            gunAimDir.set(-Math.sin(orbitState.theta) * pitchCos, Math.sin(playAimPitch), -Math.cos(orbitState.theta) * pitchCos).normalize();
+          }
+
+          // The fallback rifle is parented to the animated hand; compensate for parent pose so its barrel follows free aim.
+          if (!player.useFbx && camMode === 'play' && r.gun && r.gun.parent) {
+            const pitchCos = Math.cos(playAimPitch);
+            gunAimDir.set(-Math.sin(orbitState.theta) * pitchCos, Math.sin(playAimPitch), -Math.cos(orbitState.theta) * pitchCos).normalize();
+            player.group.updateMatrixWorld(true);
+            r.gun.parent.getWorldQuaternion(gunParentWorldQ);
+            gunAimWorldQ.setFromUnitVectors(gunForward, gunAimDir);
+            gunAimLocalQ.copy(gunParentWorldQ).invert().multiply(gunAimWorldQ);
+            r.gun.quaternion.copy(gunAimLocalQ);
           }
 
           // Smooth FOV & Camera Target
@@ -4148,6 +4185,7 @@
       window.addEventListener('keydown', ensureAudio, { once: true });
 
       const btnEye = document.getElementById('btn-eye-view');
+      btnEye.classList.toggle('active', camMode === 'play');
       function setCameraMode(mode) {
         camMode = mode;
         btnEye.classList.toggle('active', mode === 'play');
