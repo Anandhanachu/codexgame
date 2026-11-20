@@ -351,7 +351,7 @@
     /* PUBG-style dynamic center crosshair */
     #crosshair {
       position: fixed;
-      top: 50%;
+      top: 48%;
       left: 50%;
       transform: translate(-50%, -50%);
       width: 28px;
@@ -2561,6 +2561,7 @@
           }
         }
 
+        player.group.scale.setScalar(1.12);
         player.group.position.copy(player.pos);
         player.group.rotation.y = player.yaw;
         scene.add(player.group);
@@ -3467,6 +3468,7 @@
 
       const raycaster = new THREE.Raycaster();
       const mouseNdc = new THREE.Vector2();
+      const aimPointNdc = new THREE.Vector2(0, 0.04);
 
       function triggerFire(clientX, clientY) {
         if (player.dead || player.reloading) return;
@@ -3488,7 +3490,8 @@
         let aimDir = new THREE.Vector3(Math.sin(player.yaw), 0, Math.cos(player.yaw));
         if (camMode === 'play') {
           player.targetYaw = orbitState.theta + Math.PI;
-          camera.getWorldDirection(aimDir);
+          raycaster.setFromCamera(aimPointNdc, camera);
+          aimDir.copy(raycaster.ray.direction);
           orbitState.desiredPhi = clamp(orbitState.desiredPhi - 0.02, 0.68, 1.52);
         } else if (clientX !== undefined && clientY !== undefined) {
           mouseNdc.x = (clientX / window.innerWidth) * 2 - 1;
