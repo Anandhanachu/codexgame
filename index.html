@@ -596,6 +596,113 @@
     }
     .ctrl-row:last-child { border-bottom: none; }
 
+    /* Storybook prologue shown before the rescue level. */
+    #story-intro {
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 12px clamp(12px, 3vw, 42px);
+      overflow-y: auto;
+      color: #fff6df;
+      background: radial-gradient(ellipse at 50% 0%, #263247 0%, #101622 56%, #070a11 100%);
+      font-family: Georgia, 'Times New Roman', serif;
+    }
+    #story-intro.hidden { display: none; }
+    .story-heading {
+      width: min(100%, 150vh);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: #f6dc9f;
+      font: 700 clamp(12px, 1.5vw, 17px)/1.2 system-ui, sans-serif;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+    .story-page-count { color: rgba(255, 246, 223, 0.7); letter-spacing: 0.1em; }
+    .story-art-frame {
+      width: min(94vw, calc((100vh - 164px) * 1.77778));
+      aspect-ratio: 16 / 9;
+      flex: 0 0 auto;
+      overflow: hidden;
+      border: 1px solid rgba(255, 226, 165, 0.62);
+      border-radius: 8px;
+      background: #101622;
+      box-shadow: 0 18px 70px rgba(0, 0, 0, 0.55), 0 0 28px rgba(224, 171, 85, 0.12);
+    }
+    #story-image {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      opacity: 1;
+      transition: opacity 260ms ease, transform 7s ease;
+      transform: scale(1.005);
+    }
+    #story-image.changing { opacity: 0; transform: scale(1.02); }
+    .story-narration {
+      width: min(94vw, 1150px);
+      min-height: 48px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 5px 4px;
+    }
+    #story-title {
+      flex: 0 0 auto;
+      margin: 0;
+      color: #f2c979;
+      font-size: clamp(16px, 2vw, 22px);
+    }
+    #story-caption {
+      margin: 0;
+      color: rgba(255, 246, 223, 0.88);
+      font: 400 clamp(12px, 1.35vw, 15px)/1.45 system-ui, sans-serif;
+    }
+    .story-controls {
+      width: min(94vw, 1150px);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding-top: 2px;
+      font-family: system-ui, sans-serif;
+    }
+    .story-control-group { display: flex; align-items: center; gap: 9px; }
+    .story-btn {
+      min-height: 40px;
+      padding: 0 17px;
+      border: 1px solid rgba(255, 226, 165, 0.46);
+      border-radius: 6px;
+      color: #fff5dc;
+      background: rgba(19, 25, 36, 0.9);
+      font: 700 12px/1 system-ui, sans-serif;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      transition: background 140ms ease, transform 140ms ease;
+    }
+    .story-btn:hover { background: rgba(49, 58, 73, 0.98); transform: translateY(-1px); }
+    .story-btn.primary {
+      color: #251708;
+      border-color: #f0c46f;
+      background: linear-gradient(180deg, #ffdf92, #d89a3c);
+      box-shadow: 0 4px 18px rgba(216, 154, 60, 0.22);
+    }
+    .story-btn.primary:hover { background: linear-gradient(180deg, #ffe9b6, #eab259); }
+    .story-skip { color: rgba(255, 246, 223, 0.78); background: transparent; border-color: rgba(255, 246, 223, 0.25); }
+    @media (max-width: 650px) {
+      #story-intro { justify-content: flex-start; padding-top: 16px; gap: 8px; }
+      .story-art-frame { width: 96vw; }
+      .story-narration { width: 96vw; align-items: flex-start; flex-direction: column; gap: 3px; }
+      .story-controls { width: 96vw; }
+      .story-btn { min-height: 38px; padding: 0 11px; }
+      .story-control-group { gap: 5px; }
+    }
+
     /* Headshot Banner Toast */
     #headshot-toast {
       position: fixed;
@@ -703,6 +810,28 @@
       <button id="btn-touch-fire" class="pad-btn">Fire</button>
     </div>
   </div>
+
+  <!-- Illustrated story prologue. The game world starts when the reader finishes or skips. -->
+  <section id="story-intro" role="dialog" aria-modal="true" aria-label="Love and Rescue story">
+    <div class="story-heading">
+      <span>Love and Rescue</span>
+      <span id="story-page-count" class="story-page-count">Prologue 1 / 5</span>
+    </div>
+    <div class="story-art-frame">
+      <img id="story-image" src="assets/story/prologue-page-1.png" alt="A peaceful valley before the King's watchers arrive" />
+    </div>
+    <div class="story-narration" aria-live="polite">
+      <h1 id="story-title">A Peaceful Sanctuary</h1>
+      <p id="story-caption">A quiet valley was their home. Then the King’s watchers found her, and took her into the forest.</p>
+    </div>
+    <footer class="story-controls">
+      <button id="story-skip" class="story-btn story-skip" type="button">Skip intro</button>
+      <div class="story-control-group">
+        <button id="story-prev" class="story-btn" type="button">Back</button>
+        <button id="story-next" class="story-btn primary" type="button">Continue</button>
+      </div>
+    </footer>
+  </section>
 
   <!-- Bottom-Right "i" Controls Info Button -->
   <div id="info-wrap">
@@ -4200,6 +4329,129 @@
         if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
         if (audioCtx) { loadRifleShot(); startAmbientSfx(); }
       }
+
+      const storySlides = [
+        { src: 'assets/story/prologue-page-1.png', title: 'A Peaceful Sanctuary', caption: 'A quiet valley was their home. Then the King’s watchers found her, and took her into the forest.', alt: 'A peaceful valley, the watchers in the forest, and a dark carriage' },
+        { src: 'assets/story/prologue-page-2.png', title: 'The Wicked King', caption: 'Behind the fortress walls, the King keeps her captive. Her hope remains, and she believes someone will come.', alt: 'The King keeps the woman captive in a tower' },
+        { src: 'assets/story/prologue-page-3.png', title: 'The Devastating Discovery', caption: 'He returns to an empty home and finds a fragment of her dress. The tracks tell him she was taken.', alt: 'The man discovers his home in ruins and finds a fragment of her dress' },
+        { src: 'assets/story/prologue-page-4.png', title: 'The Long Journey', caption: 'He follows her trail through dangerous lands. The King’s forces stand between him and the castle.', alt: 'The man travels toward the distant castle and faces an ambush' },
+        { src: 'assets/story/title-screen.png', title: 'Love and Rescue', caption: 'The trail leads to the King’s stronghold. The journey to bring her home begins now.', alt: 'Love and Rescue title artwork with the hero, heroine, and castle' }
+      ];
+      let storyIndex = 0;
+      let storyIntroActive = true;
+      let storySwapTimer = 0;
+      let storyMusicTimer = 0;
+      let storyMusicBus = null;
+      let storyMusicStep = 0;
+      let storyMusicStarting = false;
+      const storyOverlay = document.getElementById('story-intro');
+      const storyImage = document.getElementById('story-image');
+      const storyTitle = document.getElementById('story-title');
+      const storyCaption = document.getElementById('story-caption');
+      const storyPageCount = document.getElementById('story-page-count');
+      const storyPrev = document.getElementById('story-prev');
+      const storyNext = document.getElementById('story-next');
+
+      function showStoryPage() {
+        const slide = storySlides[storyIndex];
+        storyImage.classList.add('changing');
+        if (storySwapTimer) window.clearTimeout(storySwapTimer);
+        storySwapTimer = window.setTimeout(() => {
+          storyImage.src = slide.src;
+          storyImage.alt = slide.alt;
+          storyTitle.textContent = slide.title;
+          storyCaption.textContent = slide.caption;
+          storyPageCount.textContent = `Prologue ${storyIndex + 1} / ${storySlides.length}`;
+          storyPrev.disabled = storyIndex === 0;
+          storyPrev.style.opacity = storyIndex === 0 ? '0.45' : '1';
+          storyNext.textContent = storyIndex === storySlides.length - 1 ? 'Begin Rescue' : 'Continue';
+          requestAnimationFrame(() => storyImage.classList.remove('changing'));
+        }, 180);
+      }
+
+      function playStoryNote(frequency, startAt, duration, volume) {
+        if (!audioCtx || !storyMusicBus || !audioOn) return;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(frequency, startAt);
+        gain.gain.setValueAtTime(0.0001, startAt);
+        gain.gain.exponentialRampToValueAtTime(volume, startAt + 0.16);
+        gain.gain.exponentialRampToValueAtTime(0.0001, startAt + duration);
+        osc.connect(gain);
+        gain.connect(storyMusicBus);
+        osc.start(startAt);
+        osc.stop(startAt + duration + 0.03);
+      }
+
+      function scheduleStoryMusic() {
+        if (!storyIntroActive || !audioCtx || audioCtx.state !== 'running' || !storyMusicBus) return;
+        const now = audioCtx.currentTime + 0.04;
+        const chords = [[220, 261.63, 329.63], [196, 246.94, 293.66], [174.61, 220, 261.63], [196, 246.94, 293.66]];
+        const chord = chords[Math.floor(storyMusicStep / 4) % chords.length];
+        const note = chord[storyMusicStep % 3];
+        if (storyMusicStep % 4 === 0) playStoryNote(chord[0] / 2, now, 3.1, 0.055);
+        playStoryNote(note, now, 1.4, 0.035);
+        storyMusicStep++;
+        storyMusicTimer = window.setTimeout(scheduleStoryMusic, 920);
+      }
+
+      function startStoryMusic() {
+        ensureAudio();
+        if (!audioCtx || storyMusicTimer || storyMusicStarting || storyMusicBus) return;
+        storyMusicStarting = true;
+        const begin = () => {
+          storyMusicStarting = false;
+          if (!storyIntroActive || !audioCtx || storyMusicBus) return;
+          storyMusicBus = audioCtx.createGain();
+          storyMusicBus.gain.value = 0.0001;
+          storyMusicBus.connect(audioCtx.destination);
+          storyMusicBus.gain.setTargetAtTime(0.72, audioCtx.currentTime, 0.75);
+          scheduleStoryMusic();
+        };
+        if (audioCtx.state === 'suspended') audioCtx.resume().then(begin).catch(() => { storyMusicStarting = false; });
+        else begin();
+      }
+
+      function stopStoryMusic() {
+        if (storyMusicTimer) window.clearTimeout(storyMusicTimer);
+        storyMusicTimer = 0;
+        if (storyMusicBus && audioCtx) {
+          const oldBus = storyMusicBus;
+          oldBus.gain.cancelScheduledValues(audioCtx.currentTime);
+          oldBus.gain.setTargetAtTime(0.0001, audioCtx.currentTime, 0.16);
+          window.setTimeout(() => { try { oldBus.disconnect(); } catch (_) {} }, 1000);
+          storyMusicBus = null;
+        }
+        storyMusicStarting = false;
+      }
+
+      function finishStoryIntro() {
+        if (!storyIntroActive) return;
+        storyIntroActive = false;
+        storyOverlay.classList.add('hidden');
+        stopStoryMusic();
+        startWorld();
+      }
+
+      document.getElementById('story-next').addEventListener('click', () => {
+        startStoryMusic();
+        if (storyIndex < storySlides.length - 1) {
+          storyIndex++;
+          showStoryPage();
+        } else finishStoryIntro();
+      });
+      storyPrev.addEventListener('click', () => {
+        if (storyIndex > 0) { storyIndex--; showStoryPage(); }
+      });
+      document.getElementById('story-skip').addEventListener('click', finishStoryIntro);
+      window.addEventListener('keydown', (event) => {
+        if (!storyIntroActive) return;
+        if (event.key === 'Escape') { event.preventDefault(); finishStoryIntro(); }
+        else if (event.key === 'ArrowRight' || event.key === 'Enter') { event.preventDefault(); storyNext.click(); }
+        else if (event.key === 'ArrowLeft' && storyIndex > 0) { event.preventDefault(); storyPrev.click(); }
+      });
+      showStoryPage();
       window.addEventListener('pointerdown', ensureAudio, { once: true });
       window.addEventListener('keydown', ensureAudio, { once: true });
 
@@ -4416,12 +4668,7 @@
         requestAnimationFrame(animate);
       }
 
-      if (document.readyState === 'complete' || document.readyState === 'interactive') {
-        startWorld();
-      } else {
-        window.addEventListener('DOMContentLoaded', startWorld);
-        window.addEventListener('load', startWorld);
-      }
+      // The prologue is the entry screen; finishing or skipping it starts the world.
     })();
   </script>
 </body>
