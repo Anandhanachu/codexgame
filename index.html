@@ -3398,6 +3398,8 @@
         shoulderOffset: 1.35,
       };
       const fpState = { pos: new THREE.Vector3(0, 22, 210), yaw: 0.0, pitch: -0.25 };
+      // Play-view look pitch is independent from the camera's follow position, so it can aim into the sky.
+      let playAimPitch = -0.10, desiredPlayAimPitch = -0.10;
       const crosshairEl = document.getElementById('crosshair');
 
       const VISTAS = {
@@ -3413,6 +3415,7 @@
       function recenterOnPlayer() {
         orbitFollowing = true;
         orbitState.desiredTarget.set(player.pos.x, player.pos.y + 1.8, player.pos.z);
+        if (camMode === 'play') playAimPitch = desiredPlayAimPitch = -0.10;
         // Smoothly rotate the world camera directly behind the character's current facing view!
         const behindYaw = player.yaw - Math.PI;
         orbitState.desiredTheta = orbitState.theta + shortestAngleDiff(orbitState.theta, behindYaw);
@@ -3436,6 +3439,7 @@
         orbitState.desiredTheta = camMode === 'play' ? 0.0 : v.theta;
         orbitState.desiredPhi = camMode === 'play' ? 1.24 : v.phi;
         orbitState.desiredRadius = camMode === 'play' ? 8.8 : v.radius;
+        if (camMode === 'play') playAimPitch = desiredPlayAimPitch = -0.10;
         fpState.pos.set(v.pos[0], player.pos.y + 18, v.pos[1] + 20);
       }
 
@@ -3494,7 +3498,7 @@
           player.targetYaw = orbitState.theta + Math.PI;
           raycaster.setFromCamera(aimPointNdc, camera);
           aimDir.copy(raycaster.ray.direction);
-          orbitState.desiredPhi = clamp(orbitState.desiredPhi - 0.02, 0.68, 1.52);
+          desiredPlayAimPitch = clamp(desiredPlayAimPitch - 0.02, -0.72, 1.52);
         } else if (clientX !== undefined && clientY !== undefined) {
           mouseNdc.x = (clientX / window.innerWidth) * 2 - 1;
           mouseNdc.y = -(clientY / window.innerHeight) * 2 + 1;
@@ -3574,8 +3578,9 @@
         orbitState.desiredTheta -= dx * sens;
         player.targetYaw = orbitState.desiredTheta + Math.PI;
         if (camMode === 'play') {
-          // Give the player enough upward travel to track targets above the horizon.
-          orbitState.desiredPhi = clamp(orbitState.desiredPhi - dy * sens * 0.96, 0.55, 1.72);
+          // Dragging up raises the reticle independently of the camera's collision-safe orbit.
+          const pitchSens = player.aiming ? 0.0042 : 0.0062;
+          desiredPlayAimPitch = clamp(desiredPlayAimPitch - dy * pitchSens, -0.72, 1.52);
         } else {
           orbitState.desiredPhi = clamp(orbitState.desiredPhi - dy * sens * 0.9, 0.35, 1.55);
         }
@@ -3860,13 +3865,29 @@
           orbitState.theta += (orbitState.desiredTheta - orbitState.theta) * smooth;
           orbitState.phi += (orbitState.desiredPhi - orbitState.phi) * smooth;
           orbitState.radius += (effectiveRad - orbitState.radius) * smooth;
-          const sinPhi = Math.sin(orbitState.phi);
-          const camX = orbitState.target.x + orbitState.radius * sinPhi * Math.sin(orbitState.theta);
-          const camZ = orbitState.target.z + orbitState.radius * sinPhi * Math.cos(orbitState.theta);
-          let camY = orbitState.target.y + orbitState.radius * Math.cos(orbitState.phi);
-          camY = Math.max(camY, getWalkableHeight(camX, camZ) + 0.9);
-          camera.position.set(camX, camY, camZ);
-          camera.lookAt(orbitState.target);
+          if (camMode === 'play') {
+            // Keep a stable over-the-shoulder camera position; only the viewing direction pitches.
+            const camX = orbitState.target.x + orbitState.radius * Math.sin(orbitState.theta);
+            const camZ = orbitState.target.z + orbitState.radius * Math.cos(orbitState.theta);
+            const camY = Math.max(orbitState.target.y + 0.55, getWalkableHeight(camX, camZ) + 1.5);
+            camera.position.set(camX, camY, camZ);
+            playAimPitch += (desiredPlayAimPitch - playAimPitch) * (1 - Math.exp(-12 * dt));
+            const flatForward = Math.cos(playAimPitch) * 40;
+            lookTarget.set(
+              camX - Math.sin(orbitState.theta) * flatForward,
+              camY + Math.sin(playAimPitch) * 40,
+              camZ - Math.cos(orbitState.theta) * flatForward
+            );
+            camera.lookAt(lookTarget);
+          } else {
+            const sinPhi = Math.sin(orbitState.phi);
+            const camX = orbitState.target.x + orbitState.radius * sinPhi * Math.sin(orbitState.theta);
+            const camZ = orbitState.target.z + orbitState.radius * sinPhi * Math.cos(orbitState.theta);
+            let camY = orbitState.target.y + orbitState.radius * Math.cos(orbitState.phi);
+            camY = Math.max(camY, getWalkableHeight(camX, camZ) + 0.9);
+            camera.position.set(camX, camY, camZ);
+            camera.lookAt(orbitState.target);
+          }
 
           // STRICT SIGHTLINE CUTAWAY: ONLY fade a building when it is strictly IN FRONT of the player blocking the camera!
           // Touching or hiding beside a building NEVER causes it to fade out.
@@ -4134,6 +4155,7 @@
           orbitState.desiredRadius = 8.8;
           orbitState.desiredPhi = 1.24;
           orbitState.desiredTheta = player.yaw - Math.PI;
+          playAimPitch = desiredPlayAimPitch = -0.10;
           camera.fov = 50;
           camera.updateProjectionMatrix();
         } else {
